@@ -13,7 +13,7 @@ create table if not exists public.admin_pins (
 );
 
 insert into public.admin_pins (id, pin_hash)
-values (true, crypt('123456', gen_salt('bf')))
+values (true, extensions.crypt('123456', extensions.gen_salt('bf')))
 on conflict (id) do nothing;
 
 alter table public.league_state enable row level security;
@@ -33,7 +33,7 @@ set search_path = public
 as $$
   select exists (
     select 1 from public.admin_pins
-    where id = true and pin_hash = crypt(input_pin, pin_hash)
+    where id = true and pin_hash = extensions.crypt(input_pin, pin_hash)
   );
 $$;
 
@@ -62,7 +62,7 @@ begin
   if new_pin !~ '^\d{6}$' or not public.verify_admin_pin(current_pin) then
     return false;
   end if;
-  update public.admin_pins set pin_hash = crypt(new_pin, gen_salt('bf')), updated_at = now() where id = true;
+  update public.admin_pins set pin_hash = extensions.crypt(new_pin, extensions.gen_salt('bf')), updated_at = now() where id = true;
   return found;
 end;
 $$;
