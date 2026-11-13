@@ -1,0 +1,739 @@
+{
+  "id": "monday-badminton-league",
+  "name": "Monday Badminton League",
+  "season": "Musim 1",
+  "teams": [
+    {
+      "id": "A",
+      "name": "Team A",
+      "players": [
+        {
+          "id": "A1",
+          "name": "Poknik"
+        },
+        {
+          "id": "A2",
+          "name": "Sharil"
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "name": "Team B",
+      "players": [
+        {
+          "id": "B1",
+          "name": "Aziz"
+        },
+        {
+          "id": "B2",
+          "name": "Zizi"
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "name": "Team C",
+      "players": [
+        {
+          "id": "C1",
+          "name": "Qori"
+        },
+        {
+          "id": "C2",
+          "name": "Hafiz"
+        }
+      ]
+    },
+    {
+      "id": "D",
+      "name": "Team D",
+      "players": [
+        {
+          "id": "D1",
+          "name": "Dr D"
+        },
+        {
+          "id": "D2",
+          "name": "Safar"
+        }
+      ]
+    },
+    {
+      "id": "E",
+      "name": "Team E",
+      "players": [
+        {
+          "id": "E1",
+          "name": "Pokjas"
+        },
+        {
+          "id": "E2",
+          "name": "X"
+        }
+      ]
+    },
+    {
+      "id": "F",
+      "name": "Team F",
+      "players": [
+        {
+          "id": "F1",
+          "name": "Fuad"
+        },
+        {
+          "id": "F2",
+          "name": "Tamimi"
+        }
+      ]
+    },
+    {
+      "id": "G",
+      "name": "Team G",
+      "players": [
+        {
+          "id": "G1",
+          "name": "Paiz"
+        },
+        {
+          "id": "G2",
+          "name": "Midi"
+        }
+      ]
+    }
+  ],
+  "matches": [
+    {
+      "homeTeamId": "G",
+      "awayTeamId": "B",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R1-M1",
+      "round": 1,
+      "matchNumber": 1,
+      "court": 1,
+      "date": "2026-11-16",
+      "session": "Isnin",
+      "homePlayerIds": [
+        "G1",
+        "G2"
+      ],
+      "awayPlayerIds": [
+        "B1",
+        "B2"
+      ]
+    },
+    {
+      "homeTeamId": "C",
+      "awayTeamId": "F",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R1-M2",
+      "round": 1,
+      "matchNumber": 2,
+      "court": 1,
+      "date": "2026-11-16",
+      "session": "Isnin",
+      "homePlayerIds": [
+        "C1",
+        "C2"
+      ],
+      "awayPlayerIds": [
+        "F1",
+        "F2"
+      ]
+    },
+    {
+      "homeTeamId": "E",
+      "awayTeamId": "D",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R1-M3",
+      "round": 1,
+      "matchNumber": 3,
+      "court": 1,
+      "date": "2026-11-16",
+      "session": "Isnin",
+      "homePlayerIds": [
+        "E1",
+        "E2"
+      ],
+      "awayPlayerIds": [
+        "D1",
+        "D2"
+      ]
+    },
+    {
+      "homeTeamId": "G",
+      "awayTeamId": "A",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R2-M1",
+      "round": 2,
+      "matchNumber": 1,
+      "court": 1,
+      "date": "2026-11-17",
+      "session": "Selasa",
+      "homePlayerIds": [
+        "G1",
+        "G2"
+      ],
+      "awayPlayerIds": [
+        "A1",
+        "A2"
+      ]
+    },
+    {
+      "homeTeamId": "E",
+      "awayTeamId": "B",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R2-M2",
+      "round": 2,
+      "matchNumber": 2,
+      "court": 1,
+      "date": "2026-11-17",
+      "session": "Selasa",
+      "homePlayerIds": [
+        "E1",
+        "E2"
+      ],
+      "awayPlayerIds": [
+        "B1",
+        "B2"
+      ]
+    },
+    {
+      "homeTeamId": "C",
+      "awayTeamId": "D",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R2-M3",
+      "round": 2,
+      "matchNumber": 3,
+      "court": 1,
+      "date": "2026-11-17",
+      "session": "Selasa",
+      "homePlayerIds": [
+        "C1",
+        "C2"
+      ],
+      "awayPlayerIds": [
+        "D1",
+        "D2"
+      ]
+    },
+    {
+      "homeTeamId": "A",
+      "awayTeamId": "F",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R3-M1",
+      "round": 3,
+      "matchNumber": 1,
+      "court": 1,
+      "date": "2026-11-23",
+      "session": "Isnin",
+      "homePlayerIds": [
+        "A1",
+        "A2"
+      ],
+      "awayPlayerIds": [
+        "F1",
+        "F2"
+      ]
+    },
+    {
+      "homeTeamId": "E",
+      "awayTeamId": "G",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R3-M2",
+      "round": 3,
+      "matchNumber": 2,
+      "court": 1,
+      "date": "2026-11-23",
+      "session": "Isnin",
+      "homePlayerIds": [
+        "E1",
+        "E2"
+      ],
+      "awayPlayerIds": [
+        "G1",
+        "G2"
+      ]
+    },
+    {
+      "homeTeamId": "C",
+      "awayTeamId": "B",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R3-M3",
+      "round": 3,
+      "matchNumber": 3,
+      "court": 1,
+      "date": "2026-11-23",
+      "session": "Isnin",
+      "homePlayerIds": [
+        "C1",
+        "C2"
+      ],
+      "awayPlayerIds": [
+        "B1",
+        "B2"
+      ]
+    },
+    {
+      "homeTeamId": "E",
+      "awayTeamId": "A",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R4-M1",
+      "round": 4,
+      "matchNumber": 1,
+      "court": 1,
+      "date": "2026-11-24",
+      "session": "Selasa",
+      "homePlayerIds": [
+        "E1",
+        "E2"
+      ],
+      "awayPlayerIds": [
+        "A1",
+        "A2"
+      ]
+    },
+    {
+      "homeTeamId": "F",
+      "awayTeamId": "D",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R4-M2",
+      "round": 4,
+      "matchNumber": 2,
+      "court": 1,
+      "date": "2026-11-24",
+      "session": "Selasa",
+      "homePlayerIds": [
+        "F1",
+        "F2"
+      ],
+      "awayPlayerIds": [
+        "D1",
+        "D2"
+      ]
+    },
+    {
+      "homeTeamId": "C",
+      "awayTeamId": "G",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R4-M3",
+      "round": 4,
+      "matchNumber": 3,
+      "court": 1,
+      "date": "2026-11-24",
+      "session": "Selasa",
+      "homePlayerIds": [
+        "C1",
+        "C2"
+      ],
+      "awayPlayerIds": [
+        "G1",
+        "G2"
+      ]
+    },
+    {
+      "homeTeamId": "A",
+      "awayTeamId": "D",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R5-M1",
+      "round": 5,
+      "matchNumber": 1,
+      "court": 1,
+      "date": "2026-11-30",
+      "session": "Isnin",
+      "homePlayerIds": [
+        "A1",
+        "A2"
+      ],
+      "awayPlayerIds": [
+        "D1",
+        "D2"
+      ]
+    },
+    {
+      "homeTeamId": "C",
+      "awayTeamId": "E",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R5-M2",
+      "round": 5,
+      "matchNumber": 2,
+      "court": 1,
+      "date": "2026-11-30",
+      "session": "Isnin",
+      "homePlayerIds": [
+        "C1",
+        "C2"
+      ],
+      "awayPlayerIds": [
+        "E1",
+        "E2"
+      ]
+    },
+    {
+      "homeTeamId": "F",
+      "awayTeamId": "B",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R5-M3",
+      "round": 5,
+      "matchNumber": 3,
+      "court": 1,
+      "date": "2026-11-30",
+      "session": "Isnin",
+      "homePlayerIds": [
+        "F1",
+        "F2"
+      ],
+      "awayPlayerIds": [
+        "B1",
+        "B2"
+      ]
+    },
+    {
+      "homeTeamId": "C",
+      "awayTeamId": "A",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R6-M1",
+      "round": 6,
+      "matchNumber": 1,
+      "court": 1,
+      "date": "2026-12-01",
+      "session": "Selasa",
+      "homePlayerIds": [
+        "C1",
+        "C2"
+      ],
+      "awayPlayerIds": [
+        "A1",
+        "A2"
+      ]
+    },
+    {
+      "homeTeamId": "D",
+      "awayTeamId": "B",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R6-M2",
+      "round": 6,
+      "matchNumber": 2,
+      "court": 1,
+      "date": "2026-12-01",
+      "session": "Selasa",
+      "homePlayerIds": [
+        "D1",
+        "D2"
+      ],
+      "awayPlayerIds": [
+        "B1",
+        "B2"
+      ]
+    },
+    {
+      "homeTeamId": "F",
+      "awayTeamId": "G",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R6-M3",
+      "round": 6,
+      "matchNumber": 3,
+      "court": 1,
+      "date": "2026-12-01",
+      "session": "Selasa",
+      "homePlayerIds": [
+        "F1",
+        "F2"
+      ],
+      "awayPlayerIds": [
+        "G1",
+        "G2"
+      ]
+    },
+    {
+      "homeTeamId": "A",
+      "awayTeamId": "B",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R7-M1",
+      "round": 7,
+      "matchNumber": 1,
+      "court": 1,
+      "date": "2026-12-07",
+      "session": "Isnin",
+      "homePlayerIds": [
+        "A1",
+        "A2"
+      ],
+      "awayPlayerIds": [
+        "B1",
+        "B2"
+      ]
+    },
+    {
+      "homeTeamId": "D",
+      "awayTeamId": "G",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R7-M2",
+      "round": 7,
+      "matchNumber": 2,
+      "court": 1,
+      "date": "2026-12-07",
+      "session": "Isnin",
+      "homePlayerIds": [
+        "D1",
+        "D2"
+      ],
+      "awayPlayerIds": [
+        "G1",
+        "G2"
+      ]
+    },
+    {
+      "homeTeamId": "F",
+      "awayTeamId": "E",
+      "status": "scheduled",
+      "games": [],
+      "current": {
+        "home": 0,
+        "away": 0
+      },
+      "gamesWon": {
+        "home": 0,
+        "away": 0
+      },
+      "winnerId": null,
+      "pointLog": [],
+      "id": "R7-M3",
+      "round": 7,
+      "matchNumber": 3,
+      "court": 1,
+      "date": "2026-12-07",
+      "session": "Isnin",
+      "homePlayerIds": [
+        "F1",
+        "F2"
+      ],
+      "awayPlayerIds": [
+        "E1",
+        "E2"
+      ]
+    }
+  ],
+  "createdAt": "2026-11-13T02:56:36.093Z",
+  "updatedAt": "2026-11-13T02:56:36.093Z"
+}
