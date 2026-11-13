@@ -34,3 +34,26 @@ export function generateRoundRobin(teamIds, startDate = '2026-11-16') {
   }
   return fixtures;
 }
+
+export function postponeMatch(match) {
+  if (match.status === 'postponed') {
+    return {
+      ...match,
+      status: 'scheduled',
+      date: match.originalDate || match.date,
+      session: match.originalSession || match.session,
+      originalDate: undefined,
+      originalSession: undefined,
+    };
+  }
+  const date = new Date(`${match.date}T12:00:00`);
+  date.setDate(date.getDate() + (match.session === 'Isnin' ? 1 : 6));
+  return {
+    ...match,
+    status: 'postponed',
+    originalDate: match.date,
+    originalSession: match.session,
+    date: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
+    session: match.session === 'Isnin' ? 'Selasa' : 'Isnin',
+  };
+}

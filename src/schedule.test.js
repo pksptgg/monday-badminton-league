@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { generateRoundRobin } from './schedule.js';
+import { generateRoundRobin, postponeMatch } from './schedule.js';
 
 describe('seven-team single round robin', () => {
   it('creates 21 fixtures across seven rounds with one bye per round', () => {
@@ -15,5 +15,13 @@ describe('seven-team single round robin', () => {
     }
     const pairs = fixtures.map(({ homeTeamId, awayTeamId }) => [homeTeamId, awayTeamId].sort().join('-'));
     expect(new Set(pairs).size).toBe(21);
+  });
+
+  it('moves a postponed match to the next playing session and can restore it', () => {
+    const fixture = generateRoundRobin(['A', 'B', 'C', 'D', 'E', 'F', 'G'])[0];
+    const postponed = postponeMatch(fixture);
+    expect(postponed).toMatchObject({ status: 'postponed', date: '2026-11-17', session: 'Selasa' });
+    const restored = postponeMatch(postponed);
+    expect(restored).toMatchObject({ status: 'scheduled', date: '2026-11-16', session: 'Isnin' });
   });
 });
