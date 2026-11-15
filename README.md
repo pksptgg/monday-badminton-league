@@ -20,9 +20,12 @@ Tanpa sambungan Supabase, aplikasi berjalan dalam **Demo peranti ini**: data dis
 - Satu perlawanan doubles, best of 3.
 - Game 21 mata, mesti menang dengan beza 2.
 - 20–20 diteruskan; maksimum 30–29.
-- Menang 2 mata liga, kalah 1, walkover 0.
-- Tie-break: beza game, kemudian beza mata badminton.
-- Bye tidak mendapat mata.
+- Kedudukan disusun ikut bilangan perlawanan dimenangi (menang 2 mata, kalah 0).
+- Tie-break ikut BWF: 2 team seri → head-to-head; 3 team atau lebih → beza game, kemudian beza mata (jika tinggal 2 team, head-to-head); masih seri → cabutan undi.
+- Walkover dikira menang 2–0 dalam game, tanpa mata badminton.
+- Lajur Baki menunjukkan perlawanan yang belum dimain.
+- Admin boleh tanda team yang hadir dan sistem mencadangkan perlawanan yang belum dimain antara mereka, kemudian umumkan senarai "Perlawanan hari ini".
+- PIN admin: 5 cubaan salah dari peranti yang sama dalam 15 minit akan dikunci selama 15 minit (`supabase/migrations/002_pin_rate_limit.sql`).
 - Undo rally, pembetulan skor akhir, retired dan walkover disokong.
 
 ## Arahan pembangunan
