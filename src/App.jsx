@@ -5,7 +5,7 @@ import {
   Trophy, Tv, Undo2, UserPlus, Users, X, UserCheck, Megaphone,
 } from 'lucide-react';
 import { addPoint, completeSpecial, overrideMatch, undoPoint } from './domain.js';
-import { generateRoundRobin, postponeMatch } from './schedule.js';
+import { generateRoundRobin } from './schedule.js';
 import { calculateStandings } from './standings.js';
 import { calculatePairStats, calculatePlayerStats } from './stats.js';
 import { changeAdminPin, loadLeague, online, saveLeague, subscribeLeague, verifyAdminPin } from './storage.js';
@@ -13,7 +13,7 @@ import { changeAdminPin, loadLeague, online, saveLeague, subscribeLeague, verify
 const FINAL = new Set(['completed', 'walkover', 'retired']);
 const statusText = { scheduled: 'Akan datang', live: 'Sedang berlangsung', completed: 'Selesai', walkover: 'Walkover', retired: 'Retired', postponed: 'Ditangguhkan' };
 const navItems = [
-  ['home', 'Utama', Activity], ['fixtures', 'Jadual', CalendarDays],
+  ['home', 'Utama', Activity], ['fixtures', 'Perlawanan', CalendarDays],
   ['standings', 'Kedudukan', Trophy], ['teams', 'Team', Users], ['stats', 'Statistik', Medal],
 ];
 
@@ -49,7 +49,7 @@ function Scoreboard({ match, home, away, tv = false }) {
   const homeScore = isFinal ? match.gamesWon.home : match.current.home;
   const awayScore = isFinal ? match.gamesWon.away : match.current.away;
   return <div className={`scoreboard ${tv ? 'tv-scoreboard' : ''}`}>
-    <div className="score-top"><StatusPill match={match} /><span>Pusingan {match.round} · Court {match.court}</span><span>{formatDate(match.date)}</span></div>
+    <div className="score-top"><StatusPill match={match} /><span>Perlawanan {match.number || match.matchNumber} · Court {match.court}</span><span>{FINAL.has(match.status) ? formatDate(match.date) : 'Bila team hadir'}</span></div>
     <div className="score-main">
       <div className={`score-team home ${match.winnerId === home.id ? 'winner' : ''}`}>
         <TeamMark team={home} large /><div><h2>{home.name}</h2><p><PlayerNames team={home} ids={match.homePlayerIds || []} /></p></div>
@@ -72,13 +72,13 @@ function Scoreboard({ match, home, away, tv = false }) {
 }
 function FixtureCard({ match, home, away, onOpen, isAdmin, onPostpone }) {
   return <article className={`fixture-card ${match.status}`}>
-    <div className="fixture-meta"><span>PERLAWANAN {match.matchNumber}</span><StatusPill match={match} /></div>
+    <div className="fixture-meta"><span>PERLAWANAN {match.number || match.matchNumber}</span><StatusPill match={match} /></div>
     <button className="fixture-teams" onClick={onOpen}>
       <div><TeamMark team={home} /><strong>{home.name}</strong><small><PlayerNames team={home} ids={match.homePlayerIds || []} /></small></div>
       <span className="fixture-score">{FINAL.has(match.status) ? finalLabel(match) : match.status === 'live' ? `${match.current.home} : ${match.current.away}` : 'VS'}</span>
       <div><TeamMark team={away} /><strong>{away.name}</strong><small><PlayerNames team={away} ids={match.awayPlayerIds || []} /></small></div>
     </button>
-    <div className="fixture-foot"><span>{formatDate(match.date)}</span>{isAdmin && <div><button onClick={onOpen} className="text-btn">{FINAL.has(match.status) ? 'Semak' : 'Buka skor'}<ChevronRight size={15} /></button>{['scheduled', 'postponed'].includes(match.status) && <button onClick={onPostpone} className="text-btn muted">{match.status === 'postponed' ? 'Aktifkan' : 'Tangguh'}</button>}</div>}</div>
+    <div className="fixture-foot"><span>{FINAL.has(match.status) ? `Dimain ${formatDate(match.date)}` : match.status === 'live' ? 'Sedang dimain' : 'Belum dimain'}</span>{isAdmin && <div><button onClick={onOpen} className="text-btn">{FINAL.has(match.status) ? 'Semak' : 'Buka skor'}<ChevronRight size={15} /></button></div>}</div>
   </article>;
 }
 function signed(value) { return `${value > 0 ? '+' : ''}${value}`; }
@@ -162,7 +162,7 @@ export default function App() {
   const [specialOpen, setSpecialOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [tvMode, setTvMode] = useState(false);
-  const [roundFilter, setRoundFilter] = useState('all');
+  const [roundFilter, setRoundFilter] = useState('pending');
   const [toast, setToast] = useState('');
   const [present, setPresent] = useState(() => { try { const saved = JSON.parse(sessionStorage.getItem('mbl-present') || 'null'); return saved?.date === todayIso() ? saved.ids : []; } catch { return []; } });
   const [picked, setPicked] = useState(null);
@@ -184,10 +184,6 @@ export default function App() {
   const playerStats = useMemo(() => league ? calculatePlayerStats(league.teams, league.matches) : [], [league]);
   const pairStats = useMemo(() => league ? calculatePairStats(league.teams, league.matches) : [], [league]);
   const selectedMatch = league?.matches.find((match) => match.id === selectedMatchId);
-  const currentRound = useMemo(() => {
-    if (!league) return 1;
-    return league.matches.find((match) => !FINAL.has(match.status))?.round || Math.max(...league.matches.map((match) => match.round));
-  }, [league]);
   const latestFinished = useMemo(() => {
     if (!league) return null;
     const done = league.matches.map((match, index) => ({ match, index })).filter(({ match }) => FINAL.has(match.status));
@@ -201,8 +197,8 @@ export default function App() {
   }, [league]);
   const activeMatch = useMemo(() => {
     if (!league) return null;
-    return league.matches.find((match) => match.status === 'live') || league.matches.find((match) => match.round === currentRound && !FINAL.has(match.status)) || [...league.matches].reverse().find((match) => FINAL.has(match.status));
-  }, [league, currentRound]);
+    return league.matches.find((match) => match.status === 'live') || todayMatches.find((match) => !FINAL.has(match.status)) || latestFinished || league.matches.find((match) => !FINAL.has(match.status));
+  }, [league, todayMatches, latestFinished]);
 
   function commit(next, message = 'Perubahan disimpan') {
     leagueRef.current = next;
@@ -218,7 +214,7 @@ export default function App() {
     const next = { ...leagueRef.current, matches: leagueRef.current.matches.map((match) => {
       if (match.id !== id) return match;
       const updated = updater(match);
-      if (FINAL.has(updated.status) && !FINAL.has(match.status)) return { ...updated, completedAt: new Date().toISOString() };
+      if (FINAL.has(updated.status) && !FINAL.has(match.status)) return { ...updated, completedAt: new Date().toISOString(), date: todayIso() };
       if (!FINAL.has(updated.status) && updated.completedAt) return { ...updated, completedAt: undefined };
       return updated;
     }) };
@@ -249,10 +245,19 @@ export default function App() {
   if (loadError) return <main className="fatal"><h1>Monday Badminton League</h1><p>Sambungan database gagal: {loadError}</p><button className="primary-btn" onClick={() => window.location.reload()}>Cuba lagi</button></main>;
   if (!league) return <main className="loading"><div className="brand-loader"><Trophy /></div><h1>Monday Badminton League</h1><p>Menyediakan court…</p></main>;
 
-  const roundFixtures = league.matches.filter((match) => match.round === currentRound);
-  const playingIds = new Set(roundFixtures.flatMap((match) => [match.homeTeamId, match.awayTeamId]));
-  const byeTeam = league.teams.find((team) => !playingIds.has(team.id));
+  league.matches.forEach((match, index) => { match.number = index + 1; });
+  const pendingMatches = league.matches.filter((match) => !FINAL.has(match.status));
+  const finishedMatches = league.matches.filter((match) => FINAL.has(match.status)).sort((a, b) => (b.completedAt || b.date || '').localeCompare(a.completedAt || a.date || ''));
   const completedCount = league.matches.filter((match) => FINAL.has(match.status)).length;
+
+  const presencePanel = isAdmin ? <section className="panel presence-panel"><div className="panel-head"><div><span className="eyebrow">ADMIN SAHAJA</span><h2>Siapa hadir hari ini?</h2></div>{present.length > 0 && <button className="text-btn muted" onClick={() => { setPresent([]); setPicked(null); sessionStorage.removeItem('mbl-present'); }}>Kosongkan</button>}</div>
+        <div className="presence-chips">{league.teams.map((team) => { const left = standings.find((row) => row.id === team.id)?.remaining ?? 0; const on = present.includes(team.id); return <label key={team.id} className={on ? 'on' : ''}><input type="checkbox" checked={on} disabled={!left} onChange={(event) => { const next = event.target.checked ? [...present, team.id] : present.filter((id) => id !== team.id); setPresent(next); setPicked(null); sessionStorage.setItem('mbl-present', JSON.stringify({ date: todayIso(), ids: next })); }} /><TeamMark team={team} /><span>{team.name}</span><small>baki {left}</small></label>; })}</div>
+        {present.length < 2 ? <p className="muted-note">Tanda sekurang-kurangnya 2 team yang hadir untuk lihat perlawanan yang boleh dimain.</p> : suggestions.length === 0 ? <p className="muted-note">Semua team yang hadir sudah pun bertemu. Tiada perlawanan liga yang tinggal untuk mereka.</p> : <>
+          <p className="muted-note">{suggestions.length} perlawanan boleh dimain. Team yang paling banyak baki didahulukan, dan tiada team main dua kali berturut-turut.</p>
+          <ol className="suggestion-list">{suggestions.map((match, index) => { const chosen = (picked ?? suggestions.slice(0, 4).map((m) => m.id)).includes(match.id); return <li key={match.id}><b>{index + 1}</b><button className="suggestion-teams" onClick={() => openMatch(match)}><TeamMark team={teamsById.get(match.homeTeamId)} />{teamsById.get(match.homeTeamId).name}<span>lwn</span>{teamsById.get(match.awayTeamId).name}<TeamMark team={teamsById.get(match.awayTeamId)} /></button><label><input type="checkbox" checked={chosen} onChange={(event) => { const base = picked ?? suggestions.slice(0, 4).map((m) => m.id); setPicked(event.target.checked ? [...base, match.id] : base.filter((id) => id !== match.id)); }} />Pilih</label></li>; })}</ol>
+          <button className="primary-btn" onClick={() => { const ids = suggestions.map((m) => m.id).filter((id) => (picked ?? suggestions.slice(0, 4).map((m) => m.id)).includes(id)); if (!ids.length) { setToast('Pilih sekurang-kurangnya satu perlawanan'); return; } commit({ ...leagueRef.current, today: { date: todayIso(), ids } }, 'Senarai hari ini diumumkan'); }}><Megaphone size={18} />Umumkan {(picked ?? suggestions.slice(0, 4).map((m) => m.id)).length} perlawanan</button>
+        </>}
+      </section> : null;
 
   if (tvMode && selectedMatch) return <main className="tv-mode"><div className="tv-head"><div className="brand inverse"><span className="brand-icon"><Trophy size={26} /></span><div><strong>MONDAY</strong><span>BADMINTON LEAGUE</span></div></div><button className="light-btn" onClick={() => setTvMode(false)}><ArrowLeft size={18} />Keluar mod TV</button></div><Scoreboard match={selectedMatch} home={teamsById.get(selectedMatch.homeTeamId)} away={teamsById.get(selectedMatch.awayTeamId)} tv /><div className="tv-footer"><span>{league.season}</span><span>Best of 3 · 21 mata · Had 30</span><span className="live-dot">{selectedMatch.status === 'live' ? 'LIVE' : 'SCOREBOARD'}</span></div></main>;
 
@@ -266,22 +271,16 @@ export default function App() {
 
     <main className="page-content">
       {view === 'home' && <>
-        <section className="page-intro"><div><span className="eyebrow">{league.season} · SINGLE ROUND ROBIN</span><h1>Malam badminton,<br /><em>semua mata dikira.</em></h1></div><div className="season-progress"><span>PERKEMBANGAN LIGA</span><strong>{completedCount}<small> / {league.matches.length} perlawanan</small></strong><div><i style={{ width: `${completedCount / league.matches.length * 100}%` }} /></div></div></section>
+        {presencePanel}
+        <section className="page-intro"><div><span className="eyebrow">{league.season} · MAIN IKUT TEAM YANG HADIR</span><h1>Malam badminton,<br /><em>semua mata dikira.</em></h1></div><div className="season-progress"><span>PERKEMBANGAN LIGA</span><strong>{completedCount}<small> / {league.matches.length} perlawanan</small></strong><div><i style={{ width: `${completedCount / league.matches.length * 100}%` }} /></div></div></section>
         <section className="hero-score"><div className="section-heading"><div><span className="eyebrow">COURT 1</span><h2>{activeMatch.status === 'live' ? 'Live sekarang' : FINAL.has(activeMatch.status) ? 'Keputusan terkini' : 'Perlawanan seterusnya'}</h2></div><div className="heading-actions"><button className="light-btn" onClick={() => { setSelectedMatchId(activeMatch.id); setTvMode(true); }}><Tv size={18} />Mod TV</button>{isAdmin && <button className="primary-btn" onClick={() => openMatch(activeMatch)}><Activity size={18} />Buka scoring</button>}</div></div><Scoreboard match={activeMatch} home={teamsById.get(activeMatch.homeTeamId)} away={teamsById.get(activeMatch.awayTeamId)} /></section>
         {todayMatches.length > 0 && <section className="panel today-panel"><div className="panel-head"><div><span className="eyebrow">{formatDate(todayIso())}</span><h2>Perlawanan hari ini</h2></div></div><div className="compact-fixtures">{todayMatches.map((match) => <button key={match.id} onClick={() => openMatch(match)}><span>{teamsById.get(match.homeTeamId).name}</span><strong>{FINAL.has(match.status) ? finalLabel(match) : match.status === 'live' ? `${match.current.home} : ${match.current.away}` : 'VS'}</strong><span>{teamsById.get(match.awayTeamId).name}</span></button>)}</div></section>}
-        <div className="dashboard-grid"><section className="panel"><div className="panel-head"><div><span className="eyebrow">PUSINGAN {currentRound}</span><h2>Jadual sesi ini</h2></div><button className="text-btn" onClick={() => setView('fixtures')}>Semua jadual<ChevronRight size={16} /></button></div><div className="compact-fixtures">{roundFixtures.map((match) => <button key={match.id} onClick={() => openMatch(match)}><span>{teamsById.get(match.homeTeamId).name}</span><strong>{FINAL.has(match.status) ? finalLabel(match) : match.status === 'live' ? `${match.current.home} : ${match.current.away}` : 'VS'}</strong><span>{teamsById.get(match.awayTeamId).name}</span></button>)}</div>{byeTeam && <div className="bye-note"><Clock3 size={17} /><span><strong>{byeTeam.name}</strong> bye pada pusingan ini. Tiada mata diberikan.</span></div>}</section>
+        <div className="dashboard-grid"><section className="panel"><div className="panel-head"><div><span className="eyebrow">{pendingMatches.length} BELUM DIMAIN · TIADA TARIKH TETAP</span><h2>Perlawanan belum dimain</h2></div><button className="text-btn" onClick={() => setView('fixtures')}>Semua<ChevronRight size={16} /></button></div><div className="compact-fixtures">{pendingMatches.slice(0, 6).map((match) => <button key={match.id} onClick={() => openMatch(match)}><span>{teamsById.get(match.homeTeamId).name}</span><strong>{FINAL.has(match.status) ? finalLabel(match) : match.status === 'live' ? `${match.current.home} : ${match.current.away}` : 'VS'}</strong><span>{teamsById.get(match.awayTeamId).name}</span></button>)}</div><div className="bye-note"><Clock3 size={17} /><span>Tiada tarikh tetap. Team yang hadir bermain dengan team yang belum mereka lawan, sehingga setiap team habis {league.teams.length - 1} perlawanan.</span></div></section>
           <section className="panel"><div className="panel-head"><div><span className="eyebrow">LIGA</span><h2>Kedudukan semasa</h2></div><button className="text-btn" onClick={() => setView('standings')}>Penuh<ChevronRight size={16} /></button></div><StandingsTable rows={standings.slice(0, 5)} compact /></section></div>
       </>}
 
-      {view === 'fixtures' && isAdmin && <section className="panel presence-panel"><div className="panel-head"><div><span className="eyebrow">ADMIN SAHAJA</span><h2>Siapa hadir hari ini?</h2></div>{present.length > 0 && <button className="text-btn muted" onClick={() => { setPresent([]); setPicked(null); sessionStorage.removeItem('mbl-present'); }}>Kosongkan</button>}</div>
-        <div className="presence-chips">{league.teams.map((team) => { const left = standings.find((row) => row.id === team.id)?.remaining ?? 0; const on = present.includes(team.id); return <label key={team.id} className={on ? 'on' : ''}><input type="checkbox" checked={on} disabled={!left} onChange={(event) => { const next = event.target.checked ? [...present, team.id] : present.filter((id) => id !== team.id); setPresent(next); setPicked(null); sessionStorage.setItem('mbl-present', JSON.stringify({ date: todayIso(), ids: next })); }} /><TeamMark team={team} /><span>{team.name}</span><small>baki {left}</small></label>; })}</div>
-        {present.length < 2 ? <p className="muted-note">Tanda sekurang-kurangnya 2 team yang hadir untuk lihat perlawanan yang boleh dimain.</p> : suggestions.length === 0 ? <p className="muted-note">Semua team yang hadir sudah pun bertemu. Tiada perlawanan liga yang tinggal untuk mereka.</p> : <>
-          <p className="muted-note">{suggestions.length} perlawanan boleh dimain. Team yang paling banyak baki didahulukan, dan tiada team main dua kali berturut-turut.</p>
-          <ol className="suggestion-list">{suggestions.map((match, index) => { const chosen = (picked ?? suggestions.slice(0, 4).map((m) => m.id)).includes(match.id); return <li key={match.id}><b>{index + 1}</b><button className="suggestion-teams" onClick={() => openMatch(match)}><TeamMark team={teamsById.get(match.homeTeamId)} />{teamsById.get(match.homeTeamId).name}<span>lwn</span>{teamsById.get(match.awayTeamId).name}<TeamMark team={teamsById.get(match.awayTeamId)} /></button><label><input type="checkbox" checked={chosen} onChange={(event) => { const base = picked ?? suggestions.slice(0, 4).map((m) => m.id); setPicked(event.target.checked ? [...base, match.id] : base.filter((id) => id !== match.id)); }} />Pilih</label></li>; })}</ol>
-          <button className="primary-btn" onClick={() => { const ids = suggestions.map((m) => m.id).filter((id) => (picked ?? suggestions.slice(0, 4).map((m) => m.id)).includes(id)); if (!ids.length) { setToast('Pilih sekurang-kurangnya satu perlawanan'); return; } commit({ ...leagueRef.current, today: { date: todayIso(), ids } }, 'Senarai hari ini diumumkan'); }}><Megaphone size={18} />Umumkan {(picked ?? suggestions.slice(0, 4).map((m) => m.id)).length} perlawanan</button>
-        </>}
-      </section>}
-      {view === 'fixtures' && <section><div className="page-title"><div><span className="eyebrow">21 PERLAWANAN · 7 PUSINGAN</span><h1>Jadual perlawanan</h1><p>Setiap team bertemu sekali. Satu team berehat setiap pusingan.</p></div><label className="round-filter">Pusingan<select value={roundFilter} onChange={(event) => setRoundFilter(event.target.value)}><option value="all">Semua</option>{[1, 2, 3, 4, 5, 6, 7].map((round) => <option key={round} value={round}>Pusingan {round}</option>)}</select></label></div><div className="fixtures-list">{league.matches.filter((match) => roundFilter === 'all' || match.round === Number(roundFilter)).map((match) => <FixtureCard key={match.id} match={match} home={teamsById.get(match.homeTeamId)} away={teamsById.get(match.awayTeamId)} isAdmin={isAdmin} onOpen={() => openMatch(match)} onPostpone={() => updateMatch(match.id, (current) => postponeMatch(current), match.status === 'postponed' ? 'Perlawanan diaktifkan semula' : 'Perlawanan ditangguhkan ke sesi seterusnya')} />)}</div></section>}
+      {view === 'fixtures' && presencePanel}
+      {view === 'fixtures' && <section><div className="page-title"><div><span className="eyebrow">{league.matches.length} PERLAWANAN · TIADA TARIKH TETAP</span><h1>Semua perlawanan</h1><p>Setiap team bertemu sekali. Main bila team hadir.</p></div><label className="round-filter">Papar<select value={roundFilter} onChange={(event) => setRoundFilter(event.target.value)}><option value="pending">Belum main ({pendingMatches.length})</option><option value="done">Selesai ({finishedMatches.length})</option><option value="all">Semua</option></select></label></div><div className="fixtures-list">{(roundFilter === 'done' ? finishedMatches : roundFilter === 'pending' ? pendingMatches : [...pendingMatches, ...finishedMatches]).map((match) => <FixtureCard key={match.id} match={match} home={teamsById.get(match.homeTeamId)} away={teamsById.get(match.awayTeamId)} isAdmin={isAdmin} onOpen={() => openMatch(match)} />)}</div></section>}
 
       {view === 'standings' && <section>{latestFinished && <section className="latest-result"><div className="section-heading"><div><span className="eyebrow">BARU TAMAT</span><h2>Keputusan terkini</h2></div><button className="light-btn" onClick={() => { setSelectedMatchId(latestFinished.id); setTvMode(true); }}><Tv size={18} />Mod TV</button></div><Scoreboard match={latestFinished} home={teamsById.get(latestFinished.homeTeamId)} away={teamsById.get(latestFinished.awayTeamId)} /></section>}<div className="page-title"><div><span className="eyebrow">KEDUDUKAN LIGA · 4 TERATAS KE PLAYOFF</span><h1>Siapa di depan?</h1><p>Disusun ikut bilangan menang · setiap team main {league.teams.length - 1} perlawanan</p></div><button className="light-btn" onClick={shareWhatsapp}><Share2 size={18} />Kongsi ke WhatsApp</button></div><div className="standings-panel"><StandingsTable rows={standings} /></div><div className="rules-note"><strong>Jika sama bilangan menang (peraturan BWF):</strong> 2 team seri → keputusan perlawanan antara mereka (head-to-head). 3 team atau lebih → beza game, kemudian beza mata; jika tinggal 2 team, head-to-head. Masih seri → cabutan undi. Walkover dikira menang 2–0 dalam game, tanpa mata. Lajur <strong>Baki</strong> = perlawanan yang belum dimain.</div></section>}
 
