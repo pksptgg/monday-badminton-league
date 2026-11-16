@@ -123,6 +123,31 @@ h1,h2,h3,p{margin:0}
 .bye-note{display:flex;gap:8px;align-items:flex-start;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
 .bye-note svg{flex:none;color:var(--yellow);margin-top:1px}
 .today-panel{border-color:var(--orange)}
+/* ---------- Match poster (screenshot-friendly) ---------- */
+.match-poster{background:#0b0b0b;border:2px solid var(--line);overflow:hidden}
+.mp-stripe{display:flex;height:8px}
+.mp-stripe i{display:block}
+.mp-stripe i:nth-child(1){flex:2;background:var(--orange)}
+.mp-stripe i:nth-child(2){flex:1;background:var(--red)}
+.mp-stripe i:nth-child(3){flex:1;background:var(--yellow)}
+.mp-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:16px 16px 12px;border-bottom:2px solid var(--line)}
+.mp-head h2{font:34px/1 var(--display);text-transform:uppercase;margin-top:4px}
+.mp-head p{font:600 13px var(--body);color:var(--muted);margin-top:6px}
+.mp-crest{width:44px;height:52px;flex:none;display:grid;place-items:center;padding-bottom:8px;background:var(--orange);color:#111;font:18px/1 var(--display);clip-path:polygon(0 0,100% 0,100% 70%,50% 100%,0 70%)}
+.match-poster ol{list-style:none;margin:0;padding:0}
+.match-poster li+li{border-top:1px solid var(--line)}
+.match-poster li button{width:100%;display:grid;grid-template-columns:28px minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;padding:13px 14px;text-align:left;color:var(--ink)}
+.match-poster li button:hover .mp-side span{color:var(--orange)}
+.match-poster li b{font:26px/1 var(--display);color:var(--orange)}
+.mp-side{display:flex;align-items:center;gap:8px;min-width:0;font:700 14px/1.2 var(--body)}
+.mp-side span{overflow-wrap:anywhere}
+.mp-side.away{justify-content:flex-end;text-align:right}
+.mp-side .team-mark{width:28px;height:33px;font-size:17px}
+.mp-side.won .team-mark{background:var(--yellow)}
+.mp-side.won span{color:var(--orange)}
+.match-poster em{font:18px/1 var(--display);font-style:normal;color:var(--red);letter-spacing:.04em;min-width:34px;text-align:center}
+.match-poster em.done{color:var(--yellow);font-size:22px}
+.mp-foot{display:flex;justify-content:space-between;gap:8px;padding:10px 16px;background:var(--orange);color:#111;font:700 11px var(--body);letter-spacing:.14em;text-transform:uppercase}
 
 /* ---------- Standings ---------- */
 .table-wrap{overflow-x:auto}
@@ -184,7 +209,7 @@ select{padding-right:28px}
 .presence-chips label input:disabled{cursor:not-allowed}
 .presence-chips label .team-mark{width:40px;height:46px;font-size:24px;background:#3a3a3a;color:#888}
 .presence-chips label.on .team-mark{background:#fff;color:#111}
-.presence-chips label span{font:700 11px var(--body);color:var(--muted);overflow-wrap:anywhere}
+.presence-chips label span{font:700 11.5px/1.2 var(--body);color:var(--muted);overflow-wrap:anywhere;min-height:2.4em;display:flex;align-items:center}
 .presence-chips label.on span{color:#fff}
 .presence-chips label small{font:700 10px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
 .presence-chips label.on small{color:var(--orange)}
@@ -195,6 +220,7 @@ select{padding-right:28px}
 .suggestion-teams{display:flex;flex-wrap:wrap;align-items:center;gap:6px;text-align:left;font:700 14px var(--body);color:var(--ink);padding:0}
 .suggestion-teams .team-mark{width:24px;height:28px;font-size:14px}
 .suggestion-teams span{font:700 11px var(--body);letter-spacing:.12em;color:var(--red)}
+.suggestion-teams strong{font-weight:700}
 .suggestion-list label{display:flex;align-items:center;gap:6px;font:700 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .suggestion-list label input{min-height:0;width:20px;height:20px;accent-color:var(--orange)}
 
