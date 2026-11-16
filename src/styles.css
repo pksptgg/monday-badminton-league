@@ -209,17 +209,19 @@ select{padding-right:28px}
 .presence-chips label input:disabled{cursor:not-allowed}
 .presence-chips label .team-mark{width:40px;height:46px;font-size:24px;background:#3a3a3a;color:#888}
 .presence-chips label.on .team-mark{background:#fff;color:#111}
-.presence-chips label span{font:700 11.5px/1.2 var(--body);color:var(--muted);overflow-wrap:anywhere;min-height:2.4em;display:flex;align-items:center}
-.presence-chips label.on span{color:#fff}
+.presence-chips .pc-names{font:700 12px/1.2 var(--body);color:var(--muted);overflow-wrap:anywhere;min-height:2.4em;display:flex;align-items:center;justify-content:center;padding:0 2px}
+.presence-chips label.on .pc-names{color:#fff}
 .presence-chips label small{font:700 10px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
 .presence-chips label.on small{color:var(--orange)}
 .presence-chips label:has(input:focus-visible){outline:2px solid var(--yellow);outline-offset:2px}
 .suggestion-list{list-style:none;margin:0 0 14px;padding:0;display:grid}
 .suggestion-list li{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
 .suggestion-list li>b{font:22px/1 var(--display);color:var(--orange)}
-.suggestion-teams{display:flex;flex-wrap:wrap;align-items:center;gap:6px;text-align:left;font:700 14px var(--body);color:var(--ink);padding:0}
-.suggestion-teams .team-mark{width:24px;height:28px;font-size:14px}
-.suggestion-teams span{font:700 11px var(--body);letter-spacing:.12em;color:var(--red)}
+.suggestion-teams{display:grid;justify-items:start;gap:2px;min-width:0;text-align:left;font:700 15px/1.2 var(--body);color:var(--ink);padding:0}
+.sg-side{display:flex;align-items:center;gap:10px;min-width:0}
+.sg-side strong{overflow-wrap:anywhere}
+.suggestion-teams .team-mark{width:24px;height:28px;font-size:14px;padding-top:2px}
+.suggestion-teams .sg-vs{font:700 10px var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--red);padding-left:34px}
 .suggestion-teams strong{font-weight:700}
 .suggestion-list label{display:flex;align-items:center;gap:6px;font:700 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .suggestion-list label input{min-height:0;width:20px;height:20px;accent-color:var(--orange)}
