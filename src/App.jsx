@@ -12,6 +12,8 @@ import { changeAdminPin, loadLeague, online, saveLeague, subscribeLeague, verify
 
 const FINAL = new Set(['completed', 'walkover', 'retired']);
 const VENUE = 'Dewan Sivik Wakaf Tapai';
+const LOGO = `${import.meta.env.BASE_URL}logo-192.webp`;
+const LOGO_ALT = 'Logo Isnin Khamis Badminton Club';
 const PLAY_TIME = 'Isnin & Selasa · 5:30 ptg';
 const statusText = { scheduled: 'Akan datang', live: 'Sedang berlangsung', completed: 'Selesai', walkover: 'Walkover', retired: 'Retired', postponed: 'Ditangguhkan' };
 const navItems = [
@@ -252,7 +254,7 @@ export default function App() {
   }
 
   if (loadError) return <main className="fatal"><h1>Monday Badminton League</h1><p>Sambungan database gagal: {loadError}</p><button className="primary-btn" onClick={() => window.location.reload()}>Cuba lagi</button></main>;
-  if (!league) return <main className="loading"><div className="brand-loader">MC</div><h1>Monday Badminton League</h1><p>Menyediakan court…</p></main>;
+  if (!league) return <main className="loading"><img className="brand-loader" src={LOGO} alt={LOGO_ALT} width="84" height="84" /><h1>Monday Badminton League</h1><p>Menyediakan court…</p></main>;
 
   league.matches.forEach((match, index) => { match.number = index + 1; });
   const pendingMatches = league.matches.filter((match) => !FINAL.has(match.status));
@@ -269,11 +271,11 @@ export default function App() {
         </>}
       </section> : null;
 
-  if (tvMode && selectedMatch) return <main className="tv-mode"><div className="tv-head"><div className="brand inverse"><span className="brand-icon" aria-hidden="true">MC</span><div><span>Liga Badminton</span><strong>Monday Club</strong></div></div><button className="light-btn" onClick={() => setTvMode(false)}><ArrowLeft size={18} />Keluar mod TV</button></div><Scoreboard match={selectedMatch} home={teamsById.get(selectedMatch.homeTeamId)} away={teamsById.get(selectedMatch.awayTeamId)} tv /><div className="tv-footer"><span>{league.season}</span><span>Best of 3 · 21 mata · Had 30</span><span className="live-dot">{selectedMatch.status === 'live' ? 'LIVE' : 'SCOREBOARD'}</span></div></main>;
+  if (tvMode && selectedMatch) return <main className="tv-mode"><div className="tv-head"><div className="brand inverse"><img className="brand-logo" src={LOGO} alt={LOGO_ALT} width="52" height="52" /><div><span>Liga Badminton</span><strong>Monday Club</strong></div></div><button className="light-btn" onClick={() => setTvMode(false)}><ArrowLeft size={18} />Keluar mod TV</button></div><Scoreboard match={selectedMatch} home={teamsById.get(selectedMatch.homeTeamId)} away={teamsById.get(selectedMatch.awayTeamId)} tv /><div className="tv-footer"><span>{league.season}</span><span>Best of 3 · 21 mata · Had 30</span><span className="live-dot">{selectedMatch.status === 'live' ? 'LIVE' : 'SCOREBOARD'}</span></div></main>;
 
   return <div className="app-shell">
     <header className="site-header"><div className="header-inner">
-      <button className="brand" onClick={() => setView('home')}><span className="brand-icon" aria-hidden="true">MC</span><div><span>Liga Badminton · {league.season}</span><strong>Monday Club</strong></div></button>
+      <button className="brand" onClick={() => setView('home')}><img className="brand-logo" src={LOGO} alt={LOGO_ALT} width="52" height="52" /><div><span>Liga Badminton · {league.season}</span><strong>Monday Club</strong></div></button>
       <div className="header-actions"><span className={`connection ${online ? 'online' : 'local'}`}><span />{online ? 'Live online' : 'Demo peranti ini'}</span><button className="share-btn" onClick={shareWhatsapp}><Share2 size={17} /><span>Kongsi</span></button><button className={isAdmin ? 'admin-active' : 'admin-btn'} onClick={() => isAdmin ? setSettingsOpen(true) : setPinOpen(true)}><ShieldCheck size={17} />{isAdmin ? 'Admin aktif' : 'Admin'}</button></div>
     </div><div className="color-line"><i /><i /><i /></div></header>
 
@@ -286,7 +288,7 @@ export default function App() {
         <section className="hero-score"><div className="section-heading"><div><span className="eyebrow">COURT 1</span><h2>{activeMatch.status === 'live' ? 'Live sekarang' : FINAL.has(activeMatch.status) ? 'Keputusan terkini' : 'Perlawanan seterusnya'}</h2></div><div className="heading-actions"><button className="light-btn" onClick={() => { setSelectedMatchId(activeMatch.id); setTvMode(true); }}><Tv size={18} />Mod TV</button>{isAdmin && <button className="primary-btn" onClick={() => openMatch(activeMatch)}><Activity size={18} />Buka scoring</button>}</div></div><Scoreboard match={activeMatch} home={teamsById.get(activeMatch.homeTeamId)} away={teamsById.get(activeMatch.awayTeamId)} /></section>
         {todayMatches.length > 0 && <section className="match-poster" aria-label="Senarai perlawanan hari ini">
           <div className="mp-stripe"><i /><i /><i /></div>
-          <div className="mp-head"><div><span className="eyebrow">Petang ni · {formatDate(todayIso())}</span><h2>Senarai perlawanan</h2><p>{VENUE} · 5:30 ptg</p></div><span className="mp-crest" aria-hidden="true">MC</span></div>
+          <div className="mp-head"><div><span className="eyebrow">Petang ni · {formatDate(todayIso())}</span><h2>Senarai perlawanan</h2><p>{VENUE} · 5:30 ptg</p></div><img className="mp-crest" src={LOGO} alt="" width="56" height="56" /></div>
           <ol>{todayMatches.map((match, index) => { const home = teamsById.get(match.homeTeamId); const away = teamsById.get(match.awayTeamId); const done = FINAL.has(match.status); return <li key={match.id}><button onClick={() => openMatch(match)}>
             <b>{index + 1}</b>
             <span className={`mp-side ${done && match.winnerId === home.id ? 'won' : ''}`}><TeamMark team={home} /><span>{teamPlayers(home)}</span></span>
