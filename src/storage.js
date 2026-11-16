@@ -42,6 +42,22 @@ export async function saveLeague(league, pin) {
   return next;
 }
 
+// Save a single match. Online this only replaces that match on the server, so
+// two scorers on different courts never overwrite each other; the latest full
+// league (including the other court's points) is returned.
+export async function saveMatch(match, pin) {
+  if (online) {
+    const { data, error } = await supabase.rpc('update_league_match', { input_pin: pin, input_match: match });
+    if (error) throw error;
+    if (!data) throw new Error('PIN admin tidak sah atau sesi telah tamat.');
+    return data;
+  }
+  const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || createSeedLeague();
+  const next = { ...saved, matches: saved.matches.map((item) => item.id === match.id ? match : item), updatedAt: new Date().toISOString() };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  return next;
+}
+
 export async function changeAdminPin(currentPin, newPin) {
   if (!/^\d{6}$/.test(newPin)) throw new Error('PIN mesti tepat 6 digit.');
   if (online) {

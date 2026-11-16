@@ -137,9 +137,10 @@ h1,h2,h3,p{margin:0}
 .mp-crest{width:56px;height:56px;flex:none;border-radius:12px;object-fit:cover}
 .match-poster ol{list-style:none;margin:0;padding:0}
 .match-poster li+li{border-top:1px solid var(--line)}
-.match-poster li button{width:100%;display:grid;grid-template-columns:28px minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;padding:13px 14px;text-align:left;color:var(--ink)}
+.match-poster li button{width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;padding:13px 14px;text-align:left;color:var(--ink)}
 .match-poster li button:hover .mp-side span{color:var(--orange)}
-.match-poster li b{font:26px/1 var(--display);color:var(--orange)}
+.match-poster li b{display:grid;justify-items:start;gap:3px;font:26px/1 var(--display);color:var(--orange)}
+.mp-court,.sg-court{font:700 9px var(--body);letter-spacing:.1em;color:#111;background:var(--yellow);padding:2px 4px;white-space:nowrap}
 .mp-side{display:flex;align-items:center;gap:8px;min-width:0;font:700 14px/1.2 var(--body)}
 .mp-side span{overflow-wrap:anywhere}
 .mp-side.away{justify-content:flex-end;text-align:right}
@@ -216,8 +217,8 @@ select{padding-right:28px}
 .presence-chips label.on small{color:var(--orange)}
 .presence-chips label:has(input:focus-visible){outline:2px solid var(--yellow);outline-offset:2px}
 .suggestion-list{list-style:none;margin:0 0 14px;padding:0;display:grid}
-.suggestion-list li{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
-.suggestion-list li>b{font:22px/1 var(--display);color:var(--orange)}
+.suggestion-list li{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.suggestion-list li>b{display:grid;justify-items:start;gap:3px;font:22px/1 var(--display);color:var(--orange)}
 .suggestion-teams{display:grid;justify-items:start;gap:2px;min-width:0;text-align:left;font:700 15px/1.2 var(--body);color:var(--ink);padding:0}
 .sg-side{display:flex;align-items:center;gap:10px;min-width:0}
 .sg-side strong{overflow-wrap:anywhere}
@@ -389,3 +390,5 @@ footer{max-width:1100px;margin:0 auto;padding:16px 16px calc(96px + env(safe-are
   .standings-panel .standings-table th:last-child,.standings-panel .standings-table td:last-child{display:none}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.extra-live{margin-top:-8px}
