@@ -11,6 +11,8 @@ import { calculatePairStats, calculatePlayerStats } from './stats.js';
 import { changeAdminPin, loadLeague, online, saveLeague, subscribeLeague, verifyAdminPin } from './storage.js';
 
 const FINAL = new Set(['completed', 'walkover', 'retired']);
+const VENUE = 'Dewan Sivik Wakaf Tapai';
+const PLAY_TIME = 'Isnin & Selasa · 5:30 ptg';
 const statusText = { scheduled: 'Akan datang', live: 'Sedang berlangsung', completed: 'Selesai', walkover: 'Walkover', retired: 'Retired', postponed: 'Ditangguhkan' };
 const navItems = [
   ['home', 'Utama', Activity], ['fixtures', 'Perlawanan', CalendarDays],
@@ -54,9 +56,9 @@ function Scoreboard({ match, home, away, tv = false }) {
       <div className={`score-team home ${match.winnerId === home.id ? 'winner' : ''}`}>
         <TeamMark team={home} large /><div><h2>{home.name}</h2><p><PlayerNames team={home} ids={match.homePlayerIds || []} /></p></div>
       </div>
-      <div className="score-number home-score">{homeScore}</div>
+      <div className={`score-number home-score ${isFinal && match.winnerId === home.id ? 'win' : ''}`}>{homeScore}</div>
       <div className="score-divider"><span>VS</span><small>{isFinal ? 'GAME' : `GAME ${Math.min(match.games.length + 1, 3)}`}</small></div>
-      <div className="score-number away-score">{awayScore}</div>
+      <div className={`score-number away-score ${isFinal && match.winnerId === away.id ? 'win' : ''}`}>{awayScore}</div>
       <div className={`score-team away ${match.winnerId === away.id ? 'winner' : ''}`}>
         <TeamMark team={away} large /><div><h2>{away.name}</h2><p><PlayerNames team={away} ids={match.awayPlayerIds || []} /></p></div>
       </div>
@@ -84,7 +86,7 @@ function FixtureCard({ match, home, away, onOpen, isAdmin, onPostpone }) {
 function signed(value) { return `${value > 0 ? '+' : ''}${value}`; }
 function StandingsTable({ rows, compact = false }) {
   return <div className="table-wrap"><table className="standings-table"><thead><tr><th>#</th><th>Team</th><th title="Main">P</th><th className="emphasis" title="Menang">M</th><th title="Kalah">K</th><th title="Perlawanan belum dimain">Baki</th><th title="Beza game">± Game</th>{!compact && <th title="Beza mata">± Mata</th>}</tr></thead><tbody>
-    {rows.map((row) => <tr key={row.id} className={row.rank <= 4 ? 'playoff-zone' : ''}><td><span className={`rank ${row.rank <= 4 ? 'top' : ''}`}>{row.rank}</span></td><td><div className="table-team"><TeamMark team={row} /><div><strong>{row.name}</strong>{!compact && row.tieReason && <small className="tie-reason">{row.tieReason}</small>}</div></div></td><td>{row.played}</td><td className="points-cell">{row.won}</td><td>{row.lost}</td><td className="remaining-cell">{row.remaining}</td><td className={row.gameDifference > 0 ? 'positive' : row.gameDifference < 0 ? 'negative' : ''}>{signed(row.gameDifference)}</td>{!compact && <td className={row.pointDifference > 0 ? 'positive' : row.pointDifference < 0 ? 'negative' : ''}>{signed(row.pointDifference)}</td>}</tr>)}
+    {rows.map((row) => <tr key={row.id} className={row.rank <= 4 ? 'playoff-zone' : ''}><td><span className={`rank ${row.rank <= 4 ? 'top' : ''}`}>{row.rank}</span></td><td><div className="table-team"><TeamMark team={row} /><div><strong>{row.name}</strong>{row.players?.length > 0 && <small className="row-players">{row.players.map((player) => player.name).join(' / ')}</small>}{!compact && row.tieReason && <small className="tie-reason">{row.tieReason}</small>}</div></div></td><td>{row.played}</td><td className="points-cell">{row.won}</td><td>{row.lost}</td><td className="remaining-cell">{row.remaining}</td><td className={row.gameDifference > 0 ? 'positive' : row.gameDifference < 0 ? 'negative' : ''}>{signed(row.gameDifference)}</td>{!compact && <td className={row.pointDifference > 0 ? 'positive' : row.pointDifference < 0 ? 'negative' : ''}>{signed(row.pointDifference)}</td>}</tr>)}
   </tbody></table></div>;
 }
 // Same ordering as the presence tool in the artifact: teams with the most matches left go first,
@@ -243,12 +245,13 @@ export default function App() {
   }
 
   if (loadError) return <main className="fatal"><h1>Monday Badminton League</h1><p>Sambungan database gagal: {loadError}</p><button className="primary-btn" onClick={() => window.location.reload()}>Cuba lagi</button></main>;
-  if (!league) return <main className="loading"><div className="brand-loader"><Trophy /></div><h1>Monday Badminton League</h1><p>Menyediakan court…</p></main>;
+  if (!league) return <main className="loading"><div className="brand-loader">MC</div><h1>Monday Badminton League</h1><p>Menyediakan court…</p></main>;
 
   league.matches.forEach((match, index) => { match.number = index + 1; });
   const pendingMatches = league.matches.filter((match) => !FINAL.has(match.status));
   const finishedMatches = league.matches.filter((match) => FINAL.has(match.status)).sort((a, b) => (b.completedAt || b.date || '').localeCompare(a.completedAt || a.date || ''));
   const completedCount = league.matches.filter((match) => FINAL.has(match.status)).length;
+  const posterTeams = [...new Set(todayMatches.flatMap((match) => [match.homeTeamId, match.awayTeamId]))].map((id) => teamsById.get(id)?.name.replace('Team ', '')).filter(Boolean).sort();
 
   const presencePanel = isAdmin ? <section className="panel presence-panel"><div className="panel-head"><div><span className="eyebrow">ADMIN SAHAJA</span><h2>Siapa hadir hari ini?</h2></div>{present.length > 0 && <button className="text-btn muted" onClick={() => { setPresent([]); setPicked(null); sessionStorage.removeItem('mbl-present'); }}>Kosongkan</button>}</div>
         <div className="presence-chips">{league.teams.map((team) => { const left = standings.find((row) => row.id === team.id)?.remaining ?? 0; const on = present.includes(team.id); return <label key={team.id} className={on ? 'on' : ''}><input type="checkbox" checked={on} disabled={!left} onChange={(event) => { const next = event.target.checked ? [...present, team.id] : present.filter((id) => id !== team.id); setPresent(next); setPicked(null); sessionStorage.setItem('mbl-present', JSON.stringify({ date: todayIso(), ids: next })); }} /><TeamMark team={team} /><span>{team.name}</span><small>baki {left}</small></label>; })}</div>
@@ -259,11 +262,11 @@ export default function App() {
         </>}
       </section> : null;
 
-  if (tvMode && selectedMatch) return <main className="tv-mode"><div className="tv-head"><div className="brand inverse"><span className="brand-icon"><Trophy size={26} /></span><div><strong>MONDAY</strong><span>BADMINTON LEAGUE</span></div></div><button className="light-btn" onClick={() => setTvMode(false)}><ArrowLeft size={18} />Keluar mod TV</button></div><Scoreboard match={selectedMatch} home={teamsById.get(selectedMatch.homeTeamId)} away={teamsById.get(selectedMatch.awayTeamId)} tv /><div className="tv-footer"><span>{league.season}</span><span>Best of 3 · 21 mata · Had 30</span><span className="live-dot">{selectedMatch.status === 'live' ? 'LIVE' : 'SCOREBOARD'}</span></div></main>;
+  if (tvMode && selectedMatch) return <main className="tv-mode"><div className="tv-head"><div className="brand inverse"><span className="brand-icon" aria-hidden="true">MC</span><div><span>Liga Badminton</span><strong>Monday Club</strong></div></div><button className="light-btn" onClick={() => setTvMode(false)}><ArrowLeft size={18} />Keluar mod TV</button></div><Scoreboard match={selectedMatch} home={teamsById.get(selectedMatch.homeTeamId)} away={teamsById.get(selectedMatch.awayTeamId)} tv /><div className="tv-footer"><span>{league.season}</span><span>Best of 3 · 21 mata · Had 30</span><span className="live-dot">{selectedMatch.status === 'live' ? 'LIVE' : 'SCOREBOARD'}</span></div></main>;
 
   return <div className="app-shell">
     <header className="site-header"><div className="header-inner">
-      <button className="brand" onClick={() => setView('home')}><span className="brand-icon"><Trophy size={25} /></span><div><strong>MONDAY</strong><span>BADMINTON LEAGUE</span></div></button>
+      <button className="brand" onClick={() => setView('home')}><span className="brand-icon" aria-hidden="true">MC</span><div><span>Liga Badminton · {league.season}</span><strong>Monday Club</strong></div></button>
       <div className="header-actions"><span className={`connection ${online ? 'online' : 'local'}`}><span />{online ? 'Live online' : 'Demo peranti ini'}</span><button className="share-btn" onClick={shareWhatsapp}><Share2 size={17} /><span>Kongsi</span></button><button className={isAdmin ? 'admin-active' : 'admin-btn'} onClick={() => isAdmin ? setSettingsOpen(true) : setPinOpen(true)}><ShieldCheck size={17} />{isAdmin ? 'Admin aktif' : 'Admin'}</button></div>
     </div><div className="color-line"><i /><i /><i /></div></header>
 
@@ -272,7 +275,7 @@ export default function App() {
     <main className="page-content">
       {view === 'home' && <>
         {presencePanel}
-        <section className="page-intro"><div><span className="eyebrow">{league.season} · MAIN IKUT TEAM YANG HADIR</span><h1>Malam badminton,<br /><em>semua mata dikira.</em></h1></div><div className="season-progress"><span>PERKEMBANGAN LIGA</span><strong>{completedCount}<small> / {league.matches.length} perlawanan</small></strong><div><i style={{ width: `${completedCount / league.matches.length * 100}%` }} /></div></div></section>
+        <section className="page-intro"><div><span className="eyebrow">{posterTeams.length ? `Petang ni · ${formatDate(todayIso())} · 5:30` : `${league.season} · Main bila team hadir`}</span><h1>{posterTeams.length ? <>{posterTeams.join(' · ')}<br />turun gelanggang</> : <>{pendingMatches.length} perlawanan<br />menunggu</>}</h1><p>{posterTeams.length ? `${todayMatches.length} perlawanan · ${VENUE}` : `${VENUE} · ${PLAY_TIME}`}</p></div><div className="season-progress"><span>PERKEMBANGAN LIGA</span><strong>{completedCount}<small> / {league.matches.length} perlawanan</small></strong><div><i style={{ width: `${completedCount / league.matches.length * 100}%` }} /></div></div></section>
         <section className="hero-score"><div className="section-heading"><div><span className="eyebrow">COURT 1</span><h2>{activeMatch.status === 'live' ? 'Live sekarang' : FINAL.has(activeMatch.status) ? 'Keputusan terkini' : 'Perlawanan seterusnya'}</h2></div><div className="heading-actions"><button className="light-btn" onClick={() => { setSelectedMatchId(activeMatch.id); setTvMode(true); }}><Tv size={18} />Mod TV</button>{isAdmin && <button className="primary-btn" onClick={() => openMatch(activeMatch)}><Activity size={18} />Buka scoring</button>}</div></div><Scoreboard match={activeMatch} home={teamsById.get(activeMatch.homeTeamId)} away={teamsById.get(activeMatch.awayTeamId)} /></section>
         {todayMatches.length > 0 && <section className="panel today-panel"><div className="panel-head"><div><span className="eyebrow">{formatDate(todayIso())}</span><h2>Perlawanan hari ini</h2></div></div><div className="compact-fixtures">{todayMatches.map((match) => <button key={match.id} onClick={() => openMatch(match)}><span>{teamsById.get(match.homeTeamId).name}</span><strong>{FINAL.has(match.status) ? finalLabel(match) : match.status === 'live' ? `${match.current.home} : ${match.current.away}` : 'VS'}</strong><span>{teamsById.get(match.awayTeamId).name}</span></button>)}</div></section>}
         <div className="dashboard-grid"><section className="panel"><div className="panel-head"><div><span className="eyebrow">{pendingMatches.length} BELUM DIMAIN · TIADA TARIKH TETAP</span><h2>Perlawanan belum dimain</h2></div><button className="text-btn" onClick={() => setView('fixtures')}>Semua<ChevronRight size={16} /></button></div><div className="compact-fixtures">{pendingMatches.slice(0, 6).map((match) => <button key={match.id} onClick={() => openMatch(match)}><span>{teamsById.get(match.homeTeamId).name}</span><strong>{FINAL.has(match.status) ? finalLabel(match) : match.status === 'live' ? `${match.current.home} : ${match.current.away}` : 'VS'}</strong><span>{teamsById.get(match.awayTeamId).name}</span></button>)}</div><div className="bye-note"><Clock3 size={17} /><span>Tiada tarikh tetap. Team yang hadir bermain dengan team yang belum mereka lawan, sehingga setiap team habis {league.teams.length - 1} perlawanan.</span></div></section>
@@ -289,7 +292,7 @@ export default function App() {
       {view === 'stats' && <section><div className="page-title"><div><span className="eyebrow">REKOD SEBENAR</span><h1>Statistik liga</h1><p>Prestasi pemain dan kombinasi pasangan sepanjang musim.</p></div></div>{completedCount === 0 ? <EmptyStats /> : <><div className="stat-leaders"><div><span>KEDUDUKAN TERATAS</span><strong>{standings[0].name}</strong><small>{standings[0].leaguePoints} mata liga</small></div><div><span>PALING BANYAK MENANG</span><strong>{playerStats[0].name}</strong><small>{playerStats[0].won} kemenangan · {playerStats[0].teamName}</small></div><div><span>PASANGAN TERBAIK</span><strong>{pairStats[0]?.names.join(' / ') || '—'}</strong><small>{pairStats[0] ? `${pairStats[0].winRate}% kadar menang` : 'Belum ada data'}</small></div></div><div className="stats-grid"><section className="panel"><div className="panel-head"><div><span className="eyebrow">INDIVIDU</span><h2>Rekod pemain</h2></div></div><div className="player-stats">{playerStats.filter((player) => player.played).map((player) => <div key={player.id}><div><strong>{player.name}</strong><span>{player.teamName}</span></div><div className="win-bar"><i style={{ width: `${player.winRate}%` }} /></div><span>{player.won}M / {player.lost}K</span><b>{player.winRate}%</b></div>)}</div></section><section className="panel"><div className="panel-head"><div><span className="eyebrow">DOUBLES</span><h2>Kombinasi pasangan</h2></div></div><div className="pair-list">{pairStats.map((pair, index) => <div key={pair.key}><span className="pair-rank">{index + 1}</span><div><strong>{pair.names.join(' / ')}</strong><small>{pair.teamName} · {pair.played} perlawanan</small></div><b>{pair.winRate}%</b></div>)}</div></section></div></>}</section>}
     </main>
 
-    <footer><span>Monday Badminton League · {league.season}</span><span>21 mata · Best of 3 · Satu court</span></footer>
+    <footer><span>Monday Club · {league.season} · {VENUE}</span><span>{PLAY_TIME} · 21 mata · Best of 3</span></footer>
 
     {pinOpen && <Modal title="Akses admin" onClose={() => setPinOpen(false)}><PinForm onSubmit={login} busy={pinBusy} error={pinError} /></Modal>}
     {settingsOpen && <Modal title="Tetapan admin" onClose={() => setSettingsOpen(false)}><div className="stack-form"><p>Mod admin aktif. Semua perubahan akan dikongsi kepada paparan live.</p><button className="light-btn full" onClick={() => { const current = adminPin; const next = window.prompt('PIN baharu (6 digit):'); if (!next) return; changeAdminPin(current, next).then(() => { sessionStorage.setItem('mbl-admin-pin', next); setAdminPin(next); setSettingsOpen(false); setToast('PIN berjaya ditukar'); }).catch((error) => window.alert(error.message)); }}><LockKeyhole size={18} />Tukar PIN</button><button className="danger-outline full" onClick={logout}><LogOut size={18} />Keluar mod admin</button></div></Modal>}
