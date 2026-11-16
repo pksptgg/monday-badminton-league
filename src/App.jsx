@@ -183,10 +183,33 @@ export default function App() {
   const queue = useRef(Promise.resolve());
 
   useEffect(() => {
+    let alive = true;
+    let lastSync = 0;
+    // Never overwrite the admin's own edits that are still being saved.
+    const apply = (data) => { if (alive && data && pending.current === 0) { leagueRef.current = data; setLeague(data); } };
+    // Re-read the latest scores when the viewer comes back to the app, the network
+    // returns, or the live channel reconnects: updates sent while away are not replayed.
+    const resync = () => {
+      const now = Date.now();
+      if (now - lastSync < 2000) return;
+      lastSync = now;
+      loadLeague().then(apply).catch(() => {});
+    };
+    const onVisible = () => { if (document.visibilityState === 'visible') resync(); };
     loadLeague().then((data) => { leagueRef.current = data; setLeague(data); }).catch((error) => setLoadError(error.message));
-    return subscribeLeague((data) => {
-      if (pending.current === 0) { leagueRef.current = data; setLeague(data); }
-    });
+    const unsubscribe = subscribeLeague(apply, resync);
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', resync);
+    window.addEventListener('online', resync);
+    window.addEventListener('pageshow', resync);
+    return () => {
+      alive = false;
+      unsubscribe();
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', resync);
+      window.removeEventListener('online', resync);
+      window.removeEventListener('pageshow', resync);
+    };
   }, []);
   useEffect(() => { if (toast) { const timer = setTimeout(() => setToast(''), 3500); return () => clearTimeout(timer); } }, [toast]);
 

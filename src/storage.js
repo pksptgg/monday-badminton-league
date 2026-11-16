@@ -54,12 +54,20 @@ export async function changeAdminPin(currentPin, newPin) {
   }
 }
 
-export function subscribeLeague(onChange) {
+// onReconnect fires whenever the realtime channel comes back after a drop
+// (phone slept, app switched, network change), so the caller can re-read
+// any updates that were broadcast while it was disconnected.
+export function subscribeLeague(onChange, onReconnect) {
   if (!online) return () => {};
+  let joinedBefore = false;
   const channel = supabase.channel('league-live')
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'league_state', filter: 'id=eq.1' }, (payload) => {
       onChange(payload.new.data);
     })
-    .subscribe();
+    .subscribe((status) => {
+      if (status !== 'SUBSCRIBED') return;
+      if (joinedBefore && onReconnect) onReconnect();
+      joinedBefore = true;
+    });
   return () => { supabase.removeChannel(channel); };
 }
