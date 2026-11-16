@@ -241,18 +241,20 @@ export default function App() {
     pending.current++;
     queue.current = queue.current.then(() => saveLeague(next, adminPin)).then((saved) => {
       if (ownRevision === revision.current) { leagueRef.current = saved; setLeague(saved); }
-      setToast(message);
+      if (message) setToast(message);
     }).catch((error) => setToast(error.message || 'Gagal menyimpan. Cuba lagi.')).finally(() => { pending.current--; });
   }
+  // message: null = save quietly (rally points, undo); errors still show.
   function updateMatch(id, updater, message) {
+    let justFinished = false;
     const next = { ...leagueRef.current, matches: leagueRef.current.matches.map((match) => {
       if (match.id !== id) return match;
       const updated = updater(match);
-      if (FINAL.has(updated.status) && !FINAL.has(match.status)) return { ...updated, completedAt: new Date().toISOString(), date: todayIso() };
+      if (FINAL.has(updated.status) && !FINAL.has(match.status)) { justFinished = true; return { ...updated, completedAt: new Date().toISOString(), date: todayIso() }; }
       if (!FINAL.has(updated.status) && updated.completedAt) return { ...updated, completedAt: undefined };
       return updated;
     }) };
-    commit(next, message);
+    commit(next, message === null && justFinished ? 'Perlawanan tamat' : message);
   }
   function openMatch(match) { setSelectedMatchId(match.id); }
   function closeMatch() { setSelectedMatchId(null); setSpecialOpen(false); setEditOpen(false); setTvMode(false); }
@@ -341,8 +343,8 @@ export default function App() {
 
     {selectedMatch && !tvMode && <Modal title={isAdmin ? 'Live scoring' : 'Butiran perlawanan'} onClose={closeMatch} wide><Scoreboard match={selectedMatch} home={teamsById.get(selectedMatch.homeTeamId)} away={teamsById.get(selectedMatch.awayTeamId)} />
       {isAdmin ? <div className="scoring-console"><div className="lineups"><LineupSelect label={teamsById.get(selectedMatch.homeTeamId).name} team={teamsById.get(selectedMatch.homeTeamId)} ids={selectedMatch.homePlayerIds || []} disabled={selectedMatch.status === 'live'} onChange={(ids) => updateMatch(selectedMatch.id, (match) => ({ ...match, homePlayerIds: ids }))} /><LineupSelect label={teamsById.get(selectedMatch.awayTeamId).name} team={teamsById.get(selectedMatch.awayTeamId)} ids={selectedMatch.awayPlayerIds || []} disabled={selectedMatch.status === 'live'} onChange={(ids) => updateMatch(selectedMatch.id, (match) => ({ ...match, awayPlayerIds: ids }))} /></div>
-        <div className="point-buttons"><button className="point-home" disabled={FINAL.has(selectedMatch.status)} onClick={() => updateMatch(selectedMatch.id, (match) => addPoint(match, 'home'), 'Skor dikemas kini')}><span>+1 MATA</span><strong>{teamsById.get(selectedMatch.homeTeamId).name}</strong></button><button className="point-away" disabled={FINAL.has(selectedMatch.status)} onClick={() => updateMatch(selectedMatch.id, (match) => addPoint(match, 'away'), 'Skor dikemas kini')}><span>+1 MATA</span><strong>{teamsById.get(selectedMatch.awayTeamId).name}</strong></button></div>
-        <div className="score-tools"><button className="light-btn" disabled={!selectedMatch.pointLog.length} onClick={() => updateMatch(selectedMatch.id, undoPoint, 'Satu rally dibatalkan')}><Undo2 size={18} />Undo rally</button><button className="light-btn" onClick={() => setEditOpen(true)}><Edit3 size={18} />Betulkan skor</button><button className="light-btn" onClick={() => { setSelectedMatchId(selectedMatch.id); setTvMode(true); }}><Tv size={18} />Mod TV</button><button className="danger-outline" disabled={FINAL.has(selectedMatch.status)} onClick={() => setSpecialOpen(true)}>Walkover / Retired</button></div>
+        <div className="point-buttons"><button className="point-home" disabled={FINAL.has(selectedMatch.status)} onClick={() => updateMatch(selectedMatch.id, (match) => addPoint(match, 'home'), null)}><span>+1 MATA</span><strong>{teamsById.get(selectedMatch.homeTeamId).name}</strong></button><button className="point-away" disabled={FINAL.has(selectedMatch.status)} onClick={() => updateMatch(selectedMatch.id, (match) => addPoint(match, 'away'), null)}><span>+1 MATA</span><strong>{teamsById.get(selectedMatch.awayTeamId).name}</strong></button></div>
+        <div className="score-tools"><button className="light-btn" disabled={!selectedMatch.pointLog.length} onClick={() => updateMatch(selectedMatch.id, undoPoint, null)}><Undo2 size={18} />Undo rally</button><button className="light-btn" onClick={() => setEditOpen(true)}><Edit3 size={18} />Betulkan skor</button><button className="light-btn" onClick={() => { setSelectedMatchId(selectedMatch.id); setTvMode(true); }}><Tv size={18} />Mod TV</button><button className="danger-outline" disabled={FINAL.has(selectedMatch.status)} onClick={() => setSpecialOpen(true)}>Walkover / Retired</button></div>
         {FINAL.has(selectedMatch.status) && <button className="confirm-close-btn" onClick={closeMatch}><Check size={20} />Sahkan & Tutup</button>}
       </div> : <div className="public-match-note"><Activity size={18} />Paparan ini dikemas kini oleh admin. Skor live muncul secara automatik.</div>}
     </Modal>}
