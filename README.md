@@ -17,12 +17,11 @@ Tanpa sambungan Supabase, aplikasi berjalan dalam **Demo peranti ini**: data dis
 ## Peraturan yang dipasang
 
 - Single round robin: 21 perlawanan, 7 pusingan.
-- Satu perlawanan doubles, best of 3.
+- Satu perlawanan doubles, 2 game (keputusan 2–0 atau seri 1–1).
 - Game 21 mata, mesti menang dengan beza 2.
 - 20–20 diteruskan; maksimum 30–29.
-- Kedudukan disusun ikut bilangan perlawanan dimenangi (menang 2 mata, kalah 0).
-- Tie-break ikut BWF: 2 team seri → head-to-head; 3 team atau lebih → beza game, kemudian beza mata (jika tinggal 2 team, head-to-head); masih seri → cabutan undi.
-- Walkover dikira menang 2–0 dalam game, tanpa mata badminton.
+- Kedudukan ikut mata: 1 mata setiap game menang (2–0 = 2, 1–1 = 1 seorang, 0–2 = 0). Walkover = 2 mata kepada pemenang.
+- Jika mata sama: 2 team → head-to-head; 3 team atau lebih → beza mata badminton (jika tinggal 2 team, head-to-head); masih sama → cabutan undi.
 - Lajur Baki menunjukkan perlawanan yang belum dimain.
 - Admin boleh tanda team yang hadir dan sistem mencadangkan perlawanan yang belum dimain antara mereka, kemudian umumkan senarai "Perlawanan hari ini".
 - PIN admin: 5 cubaan salah dari peranti yang sama dalam 15 minit akan dikunci selama 15 minit (`supabase/migrations/002_pin_rate_limit.sql`).

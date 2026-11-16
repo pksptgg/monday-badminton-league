@@ -12,14 +12,14 @@ export function calculatePlayerStats(teams, matches) {
   })));
   const byId = new Map(players.map((player) => [player.id, player]));
   for (const match of matches) {
-    if (!finals.has(match.status) || !match.winnerId) continue;
+    if (!finals.has(match.status)) continue;
     for (const [side, teamId] of [['home', match.homeTeamId], ['away', match.awayTeamId]]) {
       for (const playerId of match[`${side}PlayerIds`] || []) {
         const player = byId.get(playerId);
         if (!player) continue;
         player.played++;
         if (match.winnerId === teamId) player.won++;
-        else player.lost++;
+        else if (match.winnerId) player.lost++;
       }
     }
   }
@@ -31,7 +31,7 @@ export function calculatePairStats(teams, matches) {
   const pairs = new Map();
   const playerTeam = new Map(teams.flatMap((team) => team.players.map((player) => [player.id, { ...player, teamId: team.id, teamName: team.name }])));
   for (const match of matches) {
-    if (!finals.has(match.status) || !match.winnerId) continue;
+    if (!finals.has(match.status)) continue;
     for (const [side, teamId] of [['home', match.homeTeamId], ['away', match.awayTeamId]]) {
       const ids = [...(match[`${side}PlayerIds`] || [])].sort();
       if (ids.length !== 2) continue;

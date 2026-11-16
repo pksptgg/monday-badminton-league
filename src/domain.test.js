@@ -39,14 +39,22 @@ describe('BWF 21-point scoring', () => {
     expect(match.gamesWon).toEqual({ home: 0, away: 0 });
   });
 
-  it('allows an admin to correct final game scores', () => {
-    const corrected = overrideMatch(createMatch('A', 'B'), [
-      { home: 21, away: 18 },
-      { home: 17, away: 21 },
-      { home: 30, away: 29 },
-    ]);
-    expect(corrected.status).toBe('completed');
-    expect(corrected.winnerId).toBe('A');
-    expect(corrected.gamesWon).toEqual({ home: 2, away: 1 });
+  it('ends a match after exactly two games, with 1-1 as a draw', () => {
+    let match = createMatch('A', 'B');
+    for (let i = 0; i < 21; i++) match = addPoint(match, 'home');
+    expect(match.status).toBe('live');
+    for (let i = 0; i < 21; i++) match = addPoint(match, 'away');
+    expect(match.status).toBe('completed');
+    expect(match.gamesWon).toEqual({ home: 1, away: 1 });
+    expect(match.winnerId).toBeNull();
+    expect(addPoint(match, 'home')).toBe(match);
+  });
+
+  it('allows an admin to correct final scores for two games', () => {
+    const win = overrideMatch(createMatch('A', 'B'), [{ home: 21, away: 18 }, { home: 30, away: 29 }]);
+    expect(win).toMatchObject({ status: 'completed', winnerId: 'A', gamesWon: { home: 2, away: 0 } });
+    const draw = overrideMatch(createMatch('A', 'B'), [{ home: 21, away: 18 }, { home: 17, away: 21 }]);
+    expect(draw).toMatchObject({ status: 'completed', winnerId: null, gamesWon: { home: 1, away: 1 } });
+    expect(() => overrideMatch(createMatch('A', 'B'), [{ home: 21, away: 18 }])).toThrow();
   });
 });

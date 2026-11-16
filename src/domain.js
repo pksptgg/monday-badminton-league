@@ -1,3 +1,12 @@
+// Liga Monday Club: every match is exactly 2 games (2-0 win or 1-1 draw).
+export const GAMES_PER_MATCH = 2;
+
+function matchWinner(match, gamesWon) {
+  if (gamesWon.home > gamesWon.away) return match.homeTeamId;
+  if (gamesWon.away > gamesWon.home) return match.awayTeamId;
+  return null; // 1-1 draw
+}
+
 export function createMatch(homeTeamId, awayTeamId) {
   return {
     homeTeamId,
@@ -34,14 +43,15 @@ export function addPoint(match, side) {
   if (!winner) return next;
 
   const gamesWon = { ...next.gamesWon, [winner]: next.gamesWon[winner] + 1 };
-  const completed = gamesWon[winner] === 2;
+  const games = [...next.games, current];
+  const completed = games.length === GAMES_PER_MATCH;
   return {
     ...next,
-    games: [...next.games, current],
+    games,
     current: { home: 0, away: 0 },
     gamesWon,
     status: completed ? 'completed' : 'live',
-    winnerId: completed ? match[`${winner}TeamId`] : null,
+    winnerId: completed ? matchWinner(match, gamesWon) : null,
   };
 }
 
@@ -60,22 +70,20 @@ export function completeSpecial(match, status, winnerId) {
 }
 
 export function overrideMatch(match, games) {
-  if (![2, 3].includes(games.length)) throw new Error('A completed match needs two or three games');
+  if (games.length !== GAMES_PER_MATCH) throw new Error('A completed match needs exactly two games');
   const gamesWon = { home: 0, away: 0 };
   for (const game of games) {
     const winner = gameWinner(Number(game.home), Number(game.away));
     if (!winner) throw new Error('Every game must have a valid 21-point result');
     gamesWon[winner]++;
   }
-  if (Math.max(gamesWon.home, gamesWon.away) !== 2) throw new Error('Match winner must win two games');
-  const side = gamesWon.home === 2 ? 'home' : 'away';
   return {
     ...match,
     games: games.map((game) => ({ home: Number(game.home), away: Number(game.away) })),
     current: { home: 0, away: 0 },
     gamesWon,
     status: 'completed',
-    winnerId: match[`${side}TeamId`],
+    winnerId: matchWinner(match, gamesWon),
     pointLog: [],
   };
 }
