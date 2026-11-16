@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { addPoint, clearResult, completeSpecial, overrideMatch, undoPoint } from './domain.js';
 import { generateRoundRobin } from './schedule.js';
+import { formatClock, isSessionActive, nextCutoff, normalizeCutoff } from './session.js';
 import { calculateStandings } from './standings.js';
 import { calculatePairStats, calculatePlayerStats } from './stats.js';
 import { changeAdminPin, loadLeague, online, saveLeague, subscribeLeague, verifyAdminPin } from './storage.js';
@@ -174,7 +175,9 @@ export default function App() {
   const [tvMode, setTvMode] = useState(false);
   const [roundFilter, setRoundFilter] = useState('pending');
   const [toast, setToast] = useState('');
-  const [present, setPresent] = useState(() => { try { const saved = JSON.parse(sessionStorage.getItem('mbl-present') || 'null'); return saved?.date === todayIso() ? saved.ids : []; } catch { return []; } });
+  const [present, setPresent] = useState(() => { try { const saved = JSON.parse(sessionStorage.getItem('mbl-present') || 'null'); return saved?.validUntil && Date.now() < Date.parse(saved.validUntil) ? saved.ids : []; } catch { return []; } });
+  const [now, setNow] = useState(() => Date.now());
+  const [cutoffDraft, setCutoffDraft] = useState('');
   const [picked, setPicked] = useState(null);
   const leagueRef = useRef(null);
   const revision = useRef(0);
@@ -224,10 +227,19 @@ export default function App() {
     return done.length ? done[done.length - 1].match : null;
   }, [league]);
   const suggestions = useMemo(() => league && present.length >= 2 ? suggestMatches(league.matches, present) : [], [league, present]);
+  const cutoff = normalizeCutoff(league?.settings?.cutoff);
+  // Tick so the page resets on its own at the session cut-off.
+  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(timer); }, []);
+  useEffect(() => {
+    if (!present.length) return;
+    let saved = null;
+    try { saved = JSON.parse(sessionStorage.getItem('mbl-present') || 'null'); } catch { saved = null; }
+    if (!saved?.validUntil || now >= Date.parse(saved.validUntil)) { setPresent([]); setPicked(null); sessionStorage.removeItem('mbl-present'); }
+  }, [now, present.length]);
   const todayMatches = useMemo(() => {
-    if (!league?.today || league.today.date !== todayIso()) return [];
+    if (!league?.today || !isSessionActive(league.today, cutoff, new Date(now))) return [];
     return league.today.ids.map((id) => league.matches.find((match) => match.id === id)).filter(Boolean);
-  }, [league]);
+  }, [league, cutoff, now]);
   const activeMatch = useMemo(() => {
     if (!league) return null;
     return league.matches.find((match) => match.status === 'live') || todayMatches.find((match) => !FINAL.has(match.status)) || latestFinished || league.matches.find((match) => !FINAL.has(match.status));
@@ -286,12 +298,12 @@ export default function App() {
   const completedCount = league.matches.filter((match) => FINAL.has(match.status)).length;
   const posterTeams = [...new Set(todayMatches.flatMap((match) => [match.homeTeamId, match.awayTeamId]))].map((id) => teamsById.get(id)?.name.replace('Team ', '')).filter(Boolean).sort();
 
-  const presencePanel = isAdmin ? <section className="panel presence-panel"><div className="panel-head"><div><span className="eyebrow">ADMIN SAHAJA</span><h2>Siapa hadir hari ini?</h2></div>{present.length > 0 && <button className="text-btn muted" onClick={() => { setPresent([]); setPicked(null); sessionStorage.removeItem('mbl-present'); }}>Kosongkan</button>}</div>
-        <div className="presence-chips">{league.teams.map((team) => { const left = standings.find((row) => row.id === team.id)?.remaining ?? 0; const on = present.includes(team.id); return <label key={team.id} className={on ? 'on' : ''}><input type="checkbox" checked={on} disabled={!left} onChange={(event) => { const next = event.target.checked ? [...present, team.id] : present.filter((id) => id !== team.id); setPresent(next); setPicked(null); sessionStorage.setItem('mbl-present', JSON.stringify({ date: todayIso(), ids: next })); }} /><TeamMark team={team} /><span className="pc-names">{teamPlayers(team)}</span><small>baki {left}</small></label>; })}</div>
+  const presencePanel = isAdmin ? <section className="panel presence-panel"><div className="panel-head"><div><span className="eyebrow">ADMIN SAHAJA · SESI TAMAT {formatClock(cutoff)}</span><h2>Siapa hadir hari ini?</h2></div>{present.length > 0 && <button className="text-btn muted" onClick={() => { setPresent([]); setPicked(null); sessionStorage.removeItem('mbl-present'); }}>Kosongkan</button>}</div>
+        <div className="presence-chips">{league.teams.map((team) => { const left = standings.find((row) => row.id === team.id)?.remaining ?? 0; const on = present.includes(team.id); return <label key={team.id} className={on ? 'on' : ''}><input type="checkbox" checked={on} disabled={!left} onChange={(event) => { const next = event.target.checked ? [...present, team.id] : present.filter((id) => id !== team.id); setPresent(next); setPicked(null); sessionStorage.setItem('mbl-present', JSON.stringify({ validUntil: nextCutoff(cutoff).toISOString(), ids: next })); }} /><TeamMark team={team} /><span className="pc-names">{teamPlayers(team)}</span><small>baki {left}</small></label>; })}</div>
         {present.length < 2 ? <p className="muted-note">Tanda sekurang-kurangnya 2 team yang hadir untuk lihat perlawanan yang boleh dimain.</p> : suggestions.length === 0 ? <p className="muted-note">Semua team yang hadir sudah pun bertemu. Tiada perlawanan liga yang tinggal untuk mereka.</p> : <>
           <p className="muted-note">{suggestions.length} perlawanan boleh dimain. Team yang paling banyak baki didahulukan.{hasBackToBack(suggestions) ? ' Bilangan team yang hadir sedikit, jadi ada team yang terpaksa main berturut-turut. Beri mereka rehat sebentar antara perlawanan.' : ' Tiada team main dua kali berturut-turut.'}</p>
           <ol className="suggestion-list">{suggestions.map((match, index) => { const chosen = (picked ?? suggestions.slice(0, 4).map((m) => m.id)).includes(match.id); return <li key={match.id}><b>{index + 1}</b><button className="suggestion-teams" onClick={() => openMatch(match)}><span className="sg-side"><TeamMark team={teamsById.get(match.homeTeamId)} /><strong>{teamPlayers(teamsById.get(match.homeTeamId))}</strong></span><span className="sg-vs">lwn</span><span className="sg-side"><TeamMark team={teamsById.get(match.awayTeamId)} /><strong>{teamPlayers(teamsById.get(match.awayTeamId))}</strong></span></button><label><input type="checkbox" checked={chosen} onChange={(event) => { const base = picked ?? suggestions.slice(0, 4).map((m) => m.id); setPicked(event.target.checked ? [...base, match.id] : base.filter((id) => id !== match.id)); }} />Pilih</label></li>; })}</ol>
-          <button className="primary-btn" onClick={() => { const ids = suggestions.map((m) => m.id).filter((id) => (picked ?? suggestions.slice(0, 4).map((m) => m.id)).includes(id)); if (!ids.length) { setToast('Pilih sekurang-kurangnya satu perlawanan'); return; } commit({ ...leagueRef.current, today: { date: todayIso(), ids } }, 'Senarai hari ini diumumkan'); }}><Megaphone size={18} />Umumkan {(picked ?? suggestions.slice(0, 4).map((m) => m.id)).length} perlawanan</button>
+          <button className="primary-btn" onClick={() => { const ids = suggestions.map((m) => m.id).filter((id) => (picked ?? suggestions.slice(0, 4).map((m) => m.id)).includes(id)); if (!ids.length) { setToast('Pilih sekurang-kurangnya satu perlawanan'); return; } commit({ ...leagueRef.current, today: { date: todayIso(), ids, validUntil: nextCutoff(cutoff).toISOString() } }, `Senarai diumumkan sehingga ${formatClock(cutoff)}`); }}><Megaphone size={18} />Umumkan {(picked ?? suggestions.slice(0, 4).map((m) => m.id)).length} perlawanan</button>
         </>}
       </section> : null;
 
@@ -338,7 +350,7 @@ export default function App() {
     <footer><span>Monday Club · {league.season} · {VENUE}</span><span>{PLAY_TIME} · 2 game · 21 mata</span></footer>
 
     {pinOpen && <Modal title="Akses admin" onClose={() => setPinOpen(false)}><PinForm onSubmit={login} busy={pinBusy} error={pinError} /></Modal>}
-    {settingsOpen && <Modal title="Tetapan admin" onClose={() => setSettingsOpen(false)}><div className="stack-form"><p>Mod admin aktif. Semua perubahan akan dikongsi kepada paparan live.</p><button className="light-btn full" onClick={() => { const current = adminPin; const next = window.prompt('PIN baharu (6 digit):'); if (!next) return; changeAdminPin(current, next).then(() => { sessionStorage.setItem('mbl-admin-pin', next); setAdminPin(next); setSettingsOpen(false); setToast('PIN berjaya ditukar'); }).catch((error) => window.alert(error.message)); }}><LockKeyhole size={18} />Tukar PIN</button><button className="danger-outline full" onClick={logout}><LogOut size={18} />Keluar mod admin</button></div></Modal>}
+    {settingsOpen && <Modal title="Tetapan admin" onClose={() => setSettingsOpen(false)}><div className="stack-form"><p>Mod admin aktif. Semua perubahan akan dikongsi kepada paparan live.</p><label>Waktu tamat sesi<input type="time" value={cutoffDraft || cutoff} onChange={(event) => setCutoffDraft(event.target.value)} /></label><p className="muted-note">Selepas waktu ini, senarai "Petang ni" dan tanda team hadir dikosongkan. Perlawanan yang tak sempat dimain kekal "Belum main" untuk sesi seterusnya.</p><button className="primary-btn full" disabled={!cutoffDraft || normalizeCutoff(cutoffDraft) !== cutoffDraft || cutoffDraft === cutoff} onClick={() => { const value = normalizeCutoff(cutoffDraft); commit({ ...leagueRef.current, settings: { ...(leagueRef.current.settings || {}), cutoff: value } }, `Waktu tamat sesi: ${formatClock(value)}`); setCutoffDraft(''); }}><Clock3 size={18} />Simpan waktu tamat</button><button className="light-btn full" onClick={() => { const current = adminPin; const next = window.prompt('PIN baharu (6 digit):'); if (!next) return; changeAdminPin(current, next).then(() => { sessionStorage.setItem('mbl-admin-pin', next); setAdminPin(next); setSettingsOpen(false); setToast('PIN berjaya ditukar'); }).catch((error) => window.alert(error.message)); }}><LockKeyhole size={18} />Tukar PIN</button><button className="danger-outline full" onClick={logout}><LogOut size={18} />Keluar mod admin</button></div></Modal>}
 
     {selectedMatch && !tvMode && <Modal title={isAdmin ? 'Live scoring' : 'Butiran perlawanan'} onClose={closeMatch} wide><Scoreboard match={selectedMatch} home={teamsById.get(selectedMatch.homeTeamId)} away={teamsById.get(selectedMatch.awayTeamId)} />
       {isAdmin ? <div className="scoring-console"><label className="match-date">Tarikh perlawanan<input type="date" value={selectedMatch.date || ''} onChange={(event) => { const value = event.target.value; if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return; updateMatch(selectedMatch.id, (match) => ({ ...match, date: value, dateSetByAdmin: true }), `Tarikh ditetapkan: ${formatDate(value)}`); }} /><small>{FINAL.has(selectedMatch.status) ? 'Tukar jika perlawanan dimain pada hari lain.' : 'Tetapkan tarikh rancangan, atau biarkan: tarikh direkod sendiri bila perlawanan tamat.'}</small></label><div className="lineups"><LineupSelect label={teamsById.get(selectedMatch.homeTeamId).name} team={teamsById.get(selectedMatch.homeTeamId)} ids={selectedMatch.homePlayerIds || []} disabled={selectedMatch.status === 'live'} onChange={(ids) => updateMatch(selectedMatch.id, (match) => ({ ...match, homePlayerIds: ids }))} /><LineupSelect label={teamsById.get(selectedMatch.awayTeamId).name} team={teamsById.get(selectedMatch.awayTeamId)} ids={selectedMatch.awayPlayerIds || []} disabled={selectedMatch.status === 'live'} onChange={(ids) => updateMatch(selectedMatch.id, (match) => ({ ...match, awayPlayerIds: ids }))} /></div>
