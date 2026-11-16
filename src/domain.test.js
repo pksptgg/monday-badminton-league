@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createMatch, addPoint, undoPoint, overrideMatch } from './domain.js';
+import { createMatch, addPoint, undoPoint, overrideMatch, clearResult } from './domain.js';
 
 describe('BWF 21-point scoring', () => {
   it('finishes a game at 21 points with a two-point lead', () => {
@@ -56,5 +56,11 @@ describe('BWF 21-point scoring', () => {
     const draw = overrideMatch(createMatch('A', 'B'), [{ home: 21, away: 18 }, { home: 17, away: 21 }]);
     expect(draw).toMatchObject({ status: 'completed', winnerId: null, gamesWon: { home: 1, away: 1 } });
     expect(() => overrideMatch(createMatch('A', 'B'), [{ home: 21, away: 18 }])).toThrow();
+  });
+  it('cancels a saved result back to an unplayed match', () => {
+    const done = { ...overrideMatch({ ...createMatch('A', 'B'), id: 'R1-M1', round: 1, homePlayerIds: ['A1', 'A2'] }, [{ home: 21, away: 18 }, { home: 21, away: 15 }]), completedAt: '2026-11-16T10:00:00Z' };
+    const cleared = clearResult(done);
+    expect(cleared).toMatchObject({ id: 'R1-M1', round: 1, homePlayerIds: ['A1', 'A2'], status: 'scheduled', games: [], winnerId: null, gamesWon: { home: 0, away: 0 }, pointLog: [] });
+    expect(cleared.completedAt).toBeUndefined();
   });
 });

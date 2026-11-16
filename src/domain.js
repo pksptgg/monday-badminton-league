@@ -87,3 +87,10 @@ export function overrideMatch(match, games) {
     pointLog: [],
   };
 }
+
+// Admin "Batal keputusan": wipe a saved result so the match can be scored again.
+export function clearResult(match) {
+  const fresh = createMatch(match.homeTeamId, match.awayTeamId);
+  const { completedAt, ...rest } = match;
+  return { ...rest, ...fresh };
+}
