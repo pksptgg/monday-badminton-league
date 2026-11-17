@@ -55,6 +55,20 @@ export function addPoint(match, side) {
   };
 }
 
+// For the scorer: would the next rally win the game ('game') or end the match
+// ('match', the second game decides 2-0 or 1-1)? null otherwise.
+export function pointStatus(match) {
+  const none = { home: null, away: null };
+  if (!['scheduled', 'live'].includes(match.status) || match.games.length >= GAMES_PER_MATCH) return none;
+  const lastGame = match.games.length + 1 === GAMES_PER_MATCH;
+  const result = { ...none };
+  for (const side of ['home', 'away']) {
+    const next = { ...match.current, [side]: match.current[side] + 1 };
+    if (gameWinner(next.home, next.away) === side) result[side] = lastGame ? 'match' : 'game';
+  }
+  return result;
+}
+
 export function undoPoint(match) {
   if (!match.pointLog.length || match.status === 'walkover' || match.status === 'retired') return match;
   const pointLog = match.pointLog.slice(0, -1);

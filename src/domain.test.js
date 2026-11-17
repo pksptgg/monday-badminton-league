@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createMatch, addPoint, undoPoint, overrideMatch, clearResult } from './domain.js';
+import { createMatch, addPoint, undoPoint, overrideMatch, clearResult, pointStatus } from './domain.js';
 
 describe('BWF 21-point scoring', () => {
   it('finishes a game at 21 points with a two-point lead', () => {
@@ -62,5 +62,29 @@ describe('BWF 21-point scoring', () => {
     const cleared = clearResult(done);
     expect(cleared).toMatchObject({ id: 'R1-M1', round: 1, homePlayerIds: ['A1', 'A2'], status: 'scheduled', games: [], winnerId: null, gamesWon: { home: 0, away: 0 }, pointLog: [] });
     expect(cleared.completedAt).toBeUndefined();
+  });
+});
+
+describe('pointStatus (game point / match point hint)', () => {
+  const play = (match, side, times) => { for (let i = 0; i < times; i++) match = addPoint(match, side); return match; };
+
+  it('is empty early in a game', () => {
+    expect(pointStatus(play(createMatch('A', 'B'), 'home', 5))).toEqual({ home: null, away: null });
+  });
+
+  it('flags game point in game 1 and match point in game 2', () => {
+    let match = play(createMatch('A', 'B'), 'home', 20);
+    expect(pointStatus(match)).toEqual({ home: 'game', away: null });
+    match = play(addPoint(match, 'home'), 'away', 20);
+    expect(pointStatus(match)).toEqual({ home: null, away: 'match' });
+  });
+
+  it('flags both sides at 29-29 and nothing once the match is over', () => {
+    let match = play(play(createMatch('A', 'B'), 'home', 20), 'away', 20);
+    for (let i = 0; i < 9; i++) match = addPoint(addPoint(match, 'home'), 'away');
+    expect(match.current).toEqual({ home: 29, away: 29 });
+    expect(pointStatus(match)).toEqual({ home: 'game', away: 'game' });
+    match = overrideMatch(match, [{ home: 21, away: 10 }, { home: 21, away: 10 }]);
+    expect(pointStatus(match)).toEqual({ home: null, away: null });
   });
 });

@@ -16,7 +16,7 @@ Tanpa sambungan Supabase, aplikasi berjalan dalam **Demo peranti ini**: data dis
 
 ## Peraturan yang dipasang
 
-- Single round robin: 21 perlawanan, 7 pusingan.
+- Single round robin: 21 perlawanan, 7 pusingan. **Tiada tarikh tetap**: pusingan hanya panduan susunan (setiap team rehat sekali), dan perlawanan dimain bila kedua-dua team hadir. Halaman Jadual memaparkan perlawanan mengikut pusingan, team yang rehat, dan penapis team.
 - Satu perlawanan doubles, 2 game (keputusan 2–0 atau seri 1–1).
 - Game 21 mata, mesti menang dengan beza 2.
 - 20–20 diteruskan; maksimum 30–29.
@@ -30,6 +30,7 @@ Tanpa sambungan Supabase, aplikasi berjalan dalam **Demo peranti ini**: data dis
 - Sesi harian tamat pada waktu yang ditetapkan admin (asal 7:00 ptg, ikut jam telefon). Selepas itu senarai "Petang ni" dan tanda team hadir dikosongkan; perlawanan yang belum dimain kekal untuk sesi seterusnya (`src/session.js`).
 - PIN admin: 5 cubaan salah dari peranti yang sama dalam 15 minit akan dikunci selama 15 minit (`supabase/migrations/002_pin_rate_limit.sql`).
 - Undo rally, pembetulan skor akhir, retired dan walkover disokong.
+- Konsol scoring admin (untuk telefon di tepi court): butang mata dengan skor dan tanda GAME POINT / MATCH POINT, Undo rally besar, tukar antara perlawanan live/hari ini, lineup & tarikh dalam bahagian yang boleh dilipat, skrin kekal menyala semasa scoring/Mod TV, dan getaran kecil setiap mata (Android).
 
 ## Arahan pembangunan
 
@@ -49,7 +50,7 @@ Database menggunakan RPC yang mengesahkan PIN di server. Public hanya boleh memb
 Struktur utama:
 
 - `src/domain.js` — skor BWF, Undo, retired/walkover dan pembetulan.
-- `src/schedule.js` — jadual round robin.
+- `src/schedule.js` — jadual round robin dan kumpulan pusingan.
 - `src/standings.js` — mata liga dan tie-break.
 - `src/stats.js` — statistik pemain/pasangan.
 - `src/storage.js` — localStorage atau Supabase.

@@ -1,6 +1,8 @@
 import { createMatch } from './domain.js';
 
-export function generateRoundRobin(teamIds, startDate = '2026-11-16') {
+// Single round robin. There are no fixed dates: teams play whenever both are
+// present, so a "round" is only a guide to the order (each team rests once).
+export function generateRoundRobin(teamIds) {
   const rotation = [...teamIds, 'BYE'];
   const fixtures = [];
   const rounds = rotation.length - 1;
@@ -12,19 +14,12 @@ export function generateRoundRobin(teamIds, startDate = '2026-11-16') {
       const second = rotation[rotation.length - 1 - index];
       if (first === 'BYE' || second === 'BYE') continue;
       const swap = (round + index) % 2 === 0;
-      const homeTeamId = swap ? second : first;
-      const awayTeamId = swap ? first : second;
-      const dayOffset = Math.floor((round - 1) / 2) * 7 + ((round - 1) % 2);
-      const date = new Date(`${startDate}T00:00:00`);
-      date.setDate(date.getDate() + dayOffset);
       fixtures.push({
-        ...createMatch(homeTeamId, awayTeamId),
+        ...createMatch(swap ? second : first, swap ? first : second),
         id: `R${round}-M${matchNumber}`,
         round,
         matchNumber,
         court: 1,
-        date: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
-        session: (round - 1) % 2 === 0 ? 'Isnin' : 'Selasa',
       });
       matchNumber++;
     }
@@ -35,25 +30,22 @@ export function generateRoundRobin(teamIds, startDate = '2026-11-16') {
   return fixtures;
 }
 
-export function postponeMatch(match) {
-  if (match.status === 'postponed') {
-    return {
-      ...match,
-      status: 'scheduled',
-      date: match.originalDate || match.date,
-      session: match.originalSession || match.session,
-      originalDate: undefined,
-      originalSession: undefined,
-    };
+// Group matches by round for the fixtures page, rounds in order and matches in
+// their round order. Matches without a round go last (round 0).
+export function groupByRound(matches) {
+  const groups = new Map();
+  for (const match of matches) {
+    const round = Number.isInteger(match.round) && match.round > 0 ? match.round : 0;
+    if (!groups.has(round)) groups.set(round, []);
+    groups.get(round).push(match);
   }
-  const date = new Date(`${match.date}T12:00:00`);
-  date.setDate(date.getDate() + (match.session === 'Isnin' ? 1 : 6));
-  return {
-    ...match,
-    status: 'postponed',
-    originalDate: match.date,
-    originalSession: match.session,
-    date: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
-    session: match.session === 'Isnin' ? 'Selasa' : 'Isnin',
-  };
+  return [...groups.entries()]
+    .sort(([a], [b]) => (a || Number.MAX_SAFE_INTEGER) - (b || Number.MAX_SAFE_INTEGER))
+    .map(([round, items]) => ({ round, matches: [...items].sort((x, y) => (x.matchNumber || 0) - (y.matchNumber || 0)) }));
+}
+
+// Teams with no match in the given round (the round's bye).
+export function restingTeams(teamIds, roundMatches) {
+  const playing = new Set(roundMatches.flatMap((match) => [match.homeTeamId, match.awayTeamId]));
+  return teamIds.filter((id) => !playing.has(id));
 }
