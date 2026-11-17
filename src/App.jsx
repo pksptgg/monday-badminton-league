@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Activity, ArrowLeft, CalendarDays, Check, ChevronRight, Clock3, Edit3,
+  Activity, ArrowLeft, CalendarDays, Check, ChevronDown, ChevronRight, Clock3, Edit3,
   LockKeyhole, LogOut, Medal, Plus, RotateCcw, Share2, ShieldCheck,
   Trophy, Tv, Undo2, UserPlus, Users, X, UserCheck, Megaphone,
 } from 'lucide-react';
-import { addPoint, clearResult, completeSpecial, overrideMatch, undoPoint } from './domain.js';
-import { generateRoundRobin } from './schedule.js';
+import { addPoint, clearResult, completeSpecial, overrideMatch, pointStatus, undoPoint } from './domain.js';
+import { generateRoundRobin, groupByRound, restingTeams } from './schedule.js';
 import { formatClock, isSessionActive, nextCutoff, normalizeCutoff } from './session.js';
 import { assignCourts, normalizeCourts } from './courts.js';
 import { calculateStandings } from './standings.js';
@@ -17,13 +17,14 @@ const DEFAULT_VENUES = ['Dewan Sivik Wakaf Tapai', 'Kompleks Sukan Wakaf Tapai']
 const LOGO = `${import.meta.env.BASE_URL}logo-192.webp`;
 const LOGO_ALT = 'Logo Isnin Khamis Badminton Club';
 const PLAY_TIME = 'Isnin & Selasa · 5:30 ptg';
-const statusText = { scheduled: 'Akan datang', live: 'Sedang berlangsung', completed: 'Selesai', walkover: 'Walkover', retired: 'Retired', postponed: 'Ditangguhkan' };
+const statusText = { scheduled: 'Akan datang', live: 'Sedang berlangsung', completed: 'Selesai', walkover: 'Walkover', retired: 'Retired' };
 const navItems = [
   ['home', 'Utama', Activity], ['fixtures', 'Perlawanan', CalendarDays],
   ['standings', 'Kedudukan', Trophy], ['teams', 'Team', Users], ['stats', 'Statistik', Medal],
 ];
 
 function formatDate(date) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) return '—';
   return new Intl.DateTimeFormat('ms-MY', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${date}T12:00:00`));
 }
 function finalLabel(match) {
@@ -51,11 +52,11 @@ function Modal({ children, onClose, title, wide = false }) {
     </section>
   </div>;
 }
-function Scoreboard({ match, home, away, tv = false, court }) {
+function Scoreboard({ match, home, away, tv = false, court, className = '' }) {
   const isFinal = FINAL.has(match.status);
   const homeScore = isFinal ? match.gamesWon.home : match.current.home;
   const awayScore = isFinal ? match.gamesWon.away : match.current.away;
-  return <div className={`scoreboard ${tv ? 'tv-scoreboard' : ''}`}>
+  return <div className={`scoreboard ${tv ? 'tv-scoreboard' : ''} ${className}`}>
     <div className="score-top"><StatusPill match={match} /><span>Perlawanan {match.number || match.matchNumber} · Court {court || match.court || 1}</span><span>{FINAL.has(match.status) || match.dateSetByAdmin ? formatDate(match.date) : 'Bila team hadir'}</span></div>
     <div className="score-main">
       <div className={`score-team home ${match.winnerId === home.id ? 'winner' : ''}`}>
@@ -156,6 +157,64 @@ function EditResultForm({ match, onSave }) {
 function LineupSelect({ label, team, ids, onChange, disabled }) {
   return <div className="lineup"><span>{label}</span><div>{[0, 1].map((index) => <select key={index} disabled={disabled} value={ids[index] || ''} onChange={(event) => { const next = [...ids]; next[index] = event.target.value; onChange(next); }}><option value="">Pilih pemain</option>{team.players.map((player) => <option key={player.id} value={player.id} disabled={ids.includes(player.id) && ids[index] !== player.id}>{player.name}</option>)}</select>)}</div></div>;
 }
+const shortName = (team) => team.name.replace('Team ', '');
+function PointButton({ side, team, ids, score, hint, disabled, onPoint }) {
+  return <button className={`point-${side} ${hint ? 'hot' : ''}`} disabled={disabled} onClick={onPoint} aria-label={`Tambah 1 mata untuk ${team.name}`}>
+    <span className="pb-team">{team.name}</span>
+    <small className="pb-players"><PlayerNames team={team} ids={ids} /></small>
+    <strong className="pb-score">{score}</strong>
+    <span className="pb-hint">{hint === 'match' ? 'Match point' : hint === 'game' ? 'Game point' : '+1 mata'}</span>
+  </button>;
+}
+// Courtside scoring: point buttons first, everything else below or folded away.
+function ScoringConsole({ match, teamsById, courtMatches, courtOf, turnLabel = () => '', onSelect, updateMatch, onEdit, onSpecial, onTv, onClose, onClearResult }) {
+  const home = teamsById.get(match.homeTeamId);
+  const away = teamsById.get(match.awayTeamId);
+  const isFinal = FINAL.has(match.status);
+  const [detailsOpen, setDetailsOpen] = useState(match.status === 'scheduled' && !match.pointLog.length);
+  const hints = pointStatus(match);
+  const lastSide = match.pointLog[match.pointLog.length - 1];
+  const point = (side) => { try { navigator.vibrate?.(12); } catch { /* not supported */ } updateMatch(match.id, (current) => addPoint(current, side), null); };
+  const lineupText = (team, ids) => ids.map((id) => team.players.find((player) => player.id === id)?.name).filter(Boolean).join(' / ') || 'belum pilih';
+  return <div className="scoring-console">
+    {courtMatches.length > 1 && <div className="court-switch" aria-label="Tukar perlawanan">{courtMatches.map((item) => <button key={item.id} className={item.id === match.id ? 'on' : ''} aria-pressed={item.id === match.id} onClick={() => onSelect(item.id)}>
+      {turnLabel(item) && <small className="cs-turn">{turnLabel(item)}</small>}<b>C{courtOf(item)}</b><span>{shortName(teamsById.get(item.homeTeamId))} lwn {shortName(teamsById.get(item.awayTeamId))}</span>{item.status === 'live' && <em>{item.current.home}–{item.current.away}</em>}
+    </button>)}</div>}
+    <div className="point-buttons">
+      <PointButton side="home" team={home} ids={match.homePlayerIds || []} score={isFinal ? match.gamesWon.home : match.current.home} hint={hints.home} disabled={isFinal} onPoint={() => point('home')} />
+      <PointButton side="away" team={away} ids={match.awayPlayerIds || []} score={isFinal ? match.gamesWon.away : match.current.away} hint={hints.away} disabled={isFinal} onPoint={() => point('away')} />
+    </div>
+    <div className="score-tools">
+      <button className="light-btn undo-btn" disabled={!match.pointLog.length} onClick={() => updateMatch(match.id, undoPoint, null)}><Undo2 size={18} />Undo rally{lastSide ? ` · ${shortName(lastSide === 'home' ? home : away)}` : ''}</button>
+      <button className="light-btn" onClick={onEdit}><Edit3 size={18} />Betulkan skor</button>
+      <button className="light-btn" onClick={onTv}><Tv size={18} />Mod TV</button>
+      {isFinal ? <button className="danger-outline" onClick={onClearResult}><RotateCcw size={18} />Batal keputusan</button> : <button className="danger-outline" onClick={onSpecial}>Walkover / Retired</button>}
+    </div>
+    <section className={`console-details ${detailsOpen ? 'open' : ''}`}>
+      <button className="details-toggle" aria-expanded={detailsOpen} onClick={() => setDetailsOpen(!detailsOpen)}>
+        <span><strong>Lineup & tarikh</strong><small>{lineupText(home, match.homePlayerIds || [])} lwn {lineupText(away, match.awayPlayerIds || [])}{match.dateSetByAdmin ? ` · ${formatDate(match.date)}` : ''}</small></span><ChevronDown size={20} />
+      </button>
+      {detailsOpen && <div className="details-body">
+        <div className="lineups"><LineupSelect label={home.name} team={home} ids={match.homePlayerIds || []} disabled={match.status === 'live'} onChange={(ids) => updateMatch(match.id, (current) => ({ ...current, homePlayerIds: ids }))} /><LineupSelect label={away.name} team={away} ids={match.awayPlayerIds || []} disabled={match.status === 'live'} onChange={(ids) => updateMatch(match.id, (current) => ({ ...current, awayPlayerIds: ids }))} /></div>
+        {match.status === 'live' && <p className="muted-note">Lineup dikunci semasa perlawanan berlangsung.</p>}
+        <label className="match-date">Tarikh perlawanan<input type="date" value={match.dateSetByAdmin || isFinal ? match.date || '' : ''} onChange={(event) => { const value = event.target.value; if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return; updateMatch(match.id, (current) => ({ ...current, date: value, dateSetByAdmin: true }), `Tarikh ditetapkan: ${formatDate(value)}`); }} /><small>{isFinal ? 'Tukar jika perlawanan dimain pada hari lain.' : 'Pilihan. Tiada tarikh tetap; tarikh direkod sendiri bila perlawanan tamat.'}</small></label>
+      </div>}
+    </section>
+    {isFinal && <button className="confirm-close-btn" onClick={onClose}><Check size={20} />Sahkan & Tutup</button>}
+  </div>;
+}
+// Keep the phone screen on while scoring or showing the TV scoreboard.
+function useWakeLock(active) {
+  useEffect(() => {
+    if (!active || !('wakeLock' in navigator)) return undefined;
+    let lock = null;
+    let cancelled = false;
+    const request = () => { if (document.visibilityState !== 'visible') return; navigator.wakeLock.request('screen').then((next) => { if (cancelled) next.release(); else lock = next; }).catch(() => {}); };
+    request();
+    document.addEventListener('visibilitychange', request);
+    return () => { cancelled = true; document.removeEventListener('visibilitychange', request); lock?.release().catch(() => {}); };
+  }, [active]);
+}
 function EmptyStats() {
   return <div className="empty-state"><Medal size={34} /><h3>Statistik akan muncul selepas perlawanan pertama</h3><p>Sistem akan kira rekod pemain dan pasangan daripada keputusan sebenar.</p></div>;
 }
@@ -175,11 +234,13 @@ export default function App() {
   const [editOpen, setEditOpen] = useState(false);
   const [tvMode, setTvMode] = useState(false);
   const [roundFilter, setRoundFilter] = useState('pending');
+  const [teamFilter, setTeamFilter] = useState('');
   const [toast, setToast] = useState('');
   const [present, setPresent] = useState(() => { try { const saved = JSON.parse(sessionStorage.getItem('mbl-present') || 'null'); return saved?.validUntil && Date.now() < Date.parse(saved.validUntil) ? saved.ids : []; } catch { return []; } });
   const [now, setNow] = useState(() => Date.now());
   const [cutoffDraft, setCutoffDraft] = useState('');
   const [picked, setPicked] = useState(null);
+  useWakeLock(Boolean(selectedMatchId) && (isAdmin || tvMode));
   const leagueRef = useRef(null);
   const revision = useRef(0);
   const pending = useRef(0);
@@ -336,6 +397,11 @@ export default function App() {
   const turnOf = (match, index) => (league.today?.turns?.[match.id]) || index + 1;
   const liveMatches = league.matches.filter((match) => match.status === 'live').sort((a, b) => courtOf(a) - courtOf(b));
   const heroMatch = liveMatches[0] || activeMatch;
+  // Matches the courtside admin may want to jump between: live ones and today's unplayed list.
+  const courtMatches = [...new Map([...liveMatches, ...todayMatches.filter((match) => !FINAL.has(match.status)), ...(selectedMatch ? [selectedMatch] : [])].map((match) => [match.id, match])).values()].sort((a, b) => courtOf(a) - courtOf(b));
+  const fixtureSource = roundFilter === 'done' ? finishedMatches : roundFilter === 'pending' ? pendingMatches : league.matches;
+  const visibleFixtures = teamFilter ? fixtureSource.filter((match) => match.homeTeamId === teamFilter || match.awayTeamId === teamFilter) : fixtureSource;
+  const roundCount = new Set(league.matches.map((match) => match.round).filter(Boolean)).size;
   const posterTeams = [...new Set(todayMatches.flatMap((match) => [match.homeTeamId, match.awayTeamId]))].map((id) => teamsById.get(id)?.name.replace('Team ', '')).filter(Boolean).sort();
 
   const defaultPicked = plan.slice(0, 4 * courts).map(({ match }) => match.id);
@@ -380,7 +446,13 @@ export default function App() {
       </>}
 
       {view === 'fixtures' && presencePanel}
-      {view === 'fixtures' && <section><div className="page-title"><div><span className="eyebrow">{league.matches.length} PERLAWANAN · TIADA TARIKH TETAP</span><h1>Semua perlawanan</h1><p>Setiap team bertemu sekali. Main bila team hadir.</p></div><label className="round-filter">Papar<select value={roundFilter} onChange={(event) => setRoundFilter(event.target.value)}><option value="pending">Belum main ({pendingMatches.length})</option><option value="done">Selesai ({finishedMatches.length})</option><option value="all">Semua</option></select></label></div><div className="fixtures-list">{(roundFilter === 'done' ? finishedMatches : roundFilter === 'pending' ? pendingMatches : [...pendingMatches, ...finishedMatches]).map((match) => <FixtureCard key={match.id} match={match} home={teamsById.get(match.homeTeamId)} away={teamsById.get(match.awayTeamId)} isAdmin={isAdmin} onOpen={() => openMatch(match)} />)}</div></section>}
+      {view === 'fixtures' && <section><div className="page-title"><div><span className="eyebrow">{league.matches.length} PERLAWANAN · {roundCount} PUSINGAN · TIADA TARIKH TETAP</span><h1>Jadual perlawanan</h1><p>Setiap team bertemu sekali. Pusingan hanya panduan susunan; main bila kedua-dua team hadir.</p></div><div className="fixture-filters"><label className="round-filter">Papar<select value={roundFilter} onChange={(event) => setRoundFilter(event.target.value)}><option value="pending">Belum main ({pendingMatches.length})</option><option value="done">Selesai ({finishedMatches.length})</option><option value="all">Semua ({league.matches.length})</option></select></label><label className="round-filter">Team<select value={teamFilter} onChange={(event) => setTeamFilter(event.target.value)}><option value="">Semua team</option>{league.teams.map((team) => <option key={team.id} value={team.id}>{team.name} · {teamPlayers(team)}</option>)}</select></label></div></div>
+        {visibleFixtures.length === 0 ? <div className="empty-state"><CalendarDays size={34} /><h3>{roundFilter === 'pending' ? 'Semua perlawanan selesai' : 'Tiada perlawanan'}</h3><p>{teamFilter ? 'Tiada perlawanan untuk team ini dalam paparan ini.' : 'Tukar pilihan paparan untuk lihat perlawanan lain.'}</p></div> : groupByRound(visibleFixtures).map(({ round, matches }) => {
+          const all = league.matches.filter((match) => (Number.isInteger(match.round) && match.round > 0 ? match.round : 0) === round);
+          const done = all.filter((match) => FINAL.has(match.status)).length;
+          const resting = round ? restingTeams(league.teams.map((team) => team.id), all).map((id) => teamsById.get(id)?.name).filter(Boolean) : [];
+          return <section className={`round-group ${done === all.length ? 'complete' : ''}`} key={round}><div className="round-head"><h2>{round ? `Pusingan ${round}` : 'Lain-lain'}</h2><span className="round-count">{done}/{all.length} selesai</span>{resting.length > 0 && <span className="round-rest">Rehat: {resting.join(', ')}</span>}</div><div className="fixtures-list">{matches.map((match) => <FixtureCard key={match.id} match={match} home={teamsById.get(match.homeTeamId)} away={teamsById.get(match.awayTeamId)} isAdmin={isAdmin} onOpen={() => openMatch(match)} />)}</div></section>;
+        })}</section>}
 
       {view === 'standings' && <section>{latestFinished && <section className="latest-result"><div className="section-heading"><div><span className="eyebrow">BARU TAMAT</span><h2>Keputusan terkini</h2></div><button className="light-btn" onClick={() => { setSelectedMatchId(latestFinished.id); setTvMode(true); }}><Tv size={18} />Mod TV</button></div><Scoreboard court={courtOf(latestFinished)} match={latestFinished} home={teamsById.get(latestFinished.homeTeamId)} away={teamsById.get(latestFinished.awayTeamId)} /></section>}<div className="page-title"><div><span className="eyebrow">KEDUDUKAN LIGA · 4 TERATAS KE PLAYOFF</span><h1>Siapa di depan?</h1><p>2 game setiap perlawanan · 1 mata setiap game menang · setiap team main {league.teams.length - 1} perlawanan</p></div><button className="light-btn" onClick={shareWhatsapp}><Share2 size={18} />Kongsi ke WhatsApp</button></div><div className="standings-panel"><StandingsTable rows={standings} /></div><div className="rules-note"><strong>Cara kira:</strong> setiap perlawanan 2 game. Menang 2–0 = 2 mata, seri 1–1 = 1 mata seorang, kalah 0–2 = 0. Walkover = 2 mata kepada pemenang. <strong>Jika mata sama:</strong> 2 team → keputusan perlawanan antara mereka; 3 team atau lebih → beza mata badminton (jika tinggal 2 team, head-to-head); masih sama → cabutan undi. Lajur <strong>Baki</strong> = perlawanan yang belum dimain.</div></section>}
 
@@ -394,12 +466,8 @@ export default function App() {
     {pinOpen && <Modal title="Akses admin" onClose={() => setPinOpen(false)}><PinForm onSubmit={login} busy={pinBusy} error={pinError} /></Modal>}
     {settingsOpen && <Modal title="Tetapan admin" onClose={() => setSettingsOpen(false)}><div className="stack-form"><p>Mod admin aktif. Semua perubahan akan dikongsi kepada paparan live.</p><label>Bilangan court<select value={courtsDraft || courts} onChange={(event) => setCourtsDraft(Number(event.target.value))}>{[1, 2, 3, 4].map((count) => <option key={count} value={count}>{count} court</option>)}</select></label><button className="primary-btn full" disabled={!courtsDraft || courtsDraft === courts} onClick={() => { const value = normalizeCourts(courtsDraft); commitLatest((current) => ({ ...current, settings: { ...(current.settings || {}), courts: value } }), `${value} court digunakan`); setCourtsDraft(0); setPicked(null); }}><CalendarDays size={18} />Simpan bilangan court</button><label>Tempat main<select value={venueDraft || venue} onChange={(event) => setVenueDraft(event.target.value)}>{venues.map((name) => <option key={name} value={name}>{name}</option>)}</select></label><div className="add-venue"><input value={newVenue} onChange={(event) => setNewVenue(event.target.value)} placeholder="Tambah tempat baharu" maxLength={60} aria-label="Nama tempat baharu" /><button className="light-btn" disabled={!newVenue.trim() || venues.includes(newVenue.trim())} onClick={() => { const name = newVenue.trim(); setVenueDraft(name); setNewVenue(''); commitLatest((current) => ({ ...current, settings: { ...(current.settings || {}), venues: [...new Set([...(current.settings?.venues || []), name])] } }), `${name} ditambah`); }}><Plus size={18} />Tambah</button></div><button className="primary-btn full" disabled={!venueDraft || venueDraft === venue} onClick={() => { const name = venueDraft; commitLatest((current) => ({ ...current, settings: { ...(current.settings || {}), venue: name } }), `Tempat main: ${name}`); setVenueDraft(''); }}><Check size={18} />Simpan tempat main</button><label>Waktu tamat sesi<input type="time" value={cutoffDraft || cutoff} onChange={(event) => setCutoffDraft(event.target.value)} /></label><p className="muted-note">Selepas waktu ini, senarai "Petang ni" dan tanda team hadir dikosongkan. Perlawanan yang tak sempat dimain kekal "Belum main" untuk sesi seterusnya.</p><button className="primary-btn full" disabled={!cutoffDraft || normalizeCutoff(cutoffDraft) !== cutoffDraft || cutoffDraft === cutoff} onClick={() => { const value = normalizeCutoff(cutoffDraft); commitLatest((current) => ({ ...current, settings: { ...(current.settings || {}), cutoff: value } }), `Waktu tamat sesi: ${formatClock(value)}`); setCutoffDraft(''); }}><Clock3 size={18} />Simpan waktu tamat</button><button className="light-btn full" onClick={() => { const current = adminPin; const next = window.prompt('PIN baharu (6 digit):'); if (!next) return; changeAdminPin(current, next).then(() => { sessionStorage.setItem('mbl-admin-pin', next); setAdminPin(next); setSettingsOpen(false); setToast('PIN berjaya ditukar'); }).catch((error) => window.alert(error.message)); }}><LockKeyhole size={18} />Tukar PIN</button><button className="danger-outline full" onClick={logout}><LogOut size={18} />Keluar mod admin</button></div></Modal>}
 
-    {selectedMatch && !tvMode && <Modal title={isAdmin ? 'Live scoring' : 'Butiran perlawanan'} onClose={closeMatch} wide><Scoreboard court={courtOf(selectedMatch)} match={selectedMatch} home={teamsById.get(selectedMatch.homeTeamId)} away={teamsById.get(selectedMatch.awayTeamId)} />
-      {isAdmin ? <div className="scoring-console"><label className="match-date">Tarikh perlawanan<input type="date" value={selectedMatch.date || ''} onChange={(event) => { const value = event.target.value; if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return; updateMatch(selectedMatch.id, (match) => ({ ...match, date: value, dateSetByAdmin: true }), `Tarikh ditetapkan: ${formatDate(value)}`); }} /><small>{FINAL.has(selectedMatch.status) ? 'Tukar jika perlawanan dimain pada hari lain.' : 'Tetapkan tarikh rancangan, atau biarkan: tarikh direkod sendiri bila perlawanan tamat.'}</small></label><div className="lineups"><LineupSelect label={teamsById.get(selectedMatch.homeTeamId).name} team={teamsById.get(selectedMatch.homeTeamId)} ids={selectedMatch.homePlayerIds || []} disabled={selectedMatch.status === 'live'} onChange={(ids) => updateMatch(selectedMatch.id, (match) => ({ ...match, homePlayerIds: ids }))} /><LineupSelect label={teamsById.get(selectedMatch.awayTeamId).name} team={teamsById.get(selectedMatch.awayTeamId)} ids={selectedMatch.awayPlayerIds || []} disabled={selectedMatch.status === 'live'} onChange={(ids) => updateMatch(selectedMatch.id, (match) => ({ ...match, awayPlayerIds: ids }))} /></div>
-        <div className="point-buttons"><button className="point-home" disabled={FINAL.has(selectedMatch.status)} onClick={() => updateMatch(selectedMatch.id, (match) => addPoint(match, 'home'), null)}><span>+1 MATA</span><strong>{teamsById.get(selectedMatch.homeTeamId).name}</strong></button><button className="point-away" disabled={FINAL.has(selectedMatch.status)} onClick={() => updateMatch(selectedMatch.id, (match) => addPoint(match, 'away'), null)}><span>+1 MATA</span><strong>{teamsById.get(selectedMatch.awayTeamId).name}</strong></button></div>
-        <div className="score-tools"><button className="light-btn" disabled={!selectedMatch.pointLog.length} onClick={() => updateMatch(selectedMatch.id, undoPoint, null)}><Undo2 size={18} />Undo rally</button><button className="light-btn" onClick={() => setEditOpen(true)}><Edit3 size={18} />Betulkan skor</button><button className="light-btn" onClick={() => { setSelectedMatchId(selectedMatch.id); setTvMode(true); }}><Tv size={18} />Mod TV</button>{FINAL.has(selectedMatch.status) ? <button className="danger-outline" onClick={() => { const home = teamsById.get(selectedMatch.homeTeamId); const away = teamsById.get(selectedMatch.awayTeamId); if (!window.confirm(`Batalkan keputusan ${teamPlayers(home)} lwn ${teamPlayers(away)} (${finalLabel(selectedMatch)})?\n\nSkor akan dipadam dan perlawanan kembali "Belum main".`)) return; updateMatch(selectedMatch.id, clearResult, 'Keputusan dibatalkan'); }}><RotateCcw size={18} />Batal keputusan</button> : <button className="danger-outline" onClick={() => setSpecialOpen(true)}>Walkover / Retired</button>}</div>
-        {FINAL.has(selectedMatch.status) && <button className="confirm-close-btn" onClick={closeMatch}><Check size={20} />Sahkan & Tutup</button>}
-      </div> : <div className="public-match-note"><Activity size={18} />Paparan ini dikemas kini oleh admin. Skor live muncul secara automatik.</div>}
+    {selectedMatch && !tvMode && <Modal title={isAdmin ? 'Live scoring' : 'Butiran perlawanan'} onClose={closeMatch} wide><Scoreboard className={isAdmin ? 'admin-board' : ''} court={courtOf(selectedMatch)} match={selectedMatch} home={teamsById.get(selectedMatch.homeTeamId)} away={teamsById.get(selectedMatch.awayTeamId)} />
+      {isAdmin ? <ScoringConsole key={selectedMatch.id} match={selectedMatch} teamsById={teamsById} courtMatches={courtMatches} courtOf={courtOf} turnLabel={(item) => todayIds.has(item.id) && league.today?.turns?.[item.id] ? `Giliran ${league.today.turns[item.id]}` : item.status === 'live' ? 'Live' : ''} onSelect={(id) => { setSelectedMatchId(id); setSpecialOpen(false); setEditOpen(false); }} updateMatch={updateMatch} onEdit={() => setEditOpen(true)} onSpecial={() => setSpecialOpen(true)} onTv={() => setTvMode(true)} onClose={closeMatch} onClearResult={() => { const home = teamsById.get(selectedMatch.homeTeamId); const away = teamsById.get(selectedMatch.awayTeamId); if (!window.confirm(`Batalkan keputusan ${teamPlayers(home)} lwn ${teamPlayers(away)} (${finalLabel(selectedMatch)})?\n\nSkor akan dipadam dan perlawanan kembali "Belum main".`)) return; updateMatch(selectedMatch.id, clearResult, 'Keputusan dibatalkan'); }} /> : <div className="public-match-note"><Activity size={18} />Paparan ini dikemas kini oleh admin. Skor live muncul secara automatik.</div>}
     </Modal>}
 
     {specialOpen && selectedMatch && <Modal title="Keputusan khas" onClose={() => setSpecialOpen(false)}><SpecialForm match={selectedMatch} home={teamsById.get(selectedMatch.homeTeamId)} away={teamsById.get(selectedMatch.awayTeamId)} onSave={(next) => { updateMatch(selectedMatch.id, () => next, 'Keputusan khas disimpan'); setSpecialOpen(false); }} /></Modal>}
