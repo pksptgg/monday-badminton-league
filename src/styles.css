@@ -465,3 +465,8 @@ footer{max-width:1100px;margin:0 auto;padding:16px 16px calc(96px + env(safe-are
   .bracket{grid-template-columns:1fr}
   .champion-banner h2{font-size:26px}
 }
+.stack-form label.toggle-row{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line-2);background:var(--panel);cursor:pointer;text-transform:none;letter-spacing:0}
+.toggle-row input{width:22px;height:22px;flex:none;accent-color:var(--orange)}
+.toggle-row span{display:grid;gap:2px}
+.toggle-row strong{font:700 14px var(--body);color:var(--ink)}
+.toggle-row small{font:500 12px var(--body);color:var(--muted)}
