@@ -30,6 +30,7 @@ Tanpa sambungan Supabase, aplikasi berjalan dalam **Demo peranti ini**: data dis
 - Sesi harian tamat pada waktu yang ditetapkan admin (asal 7:00 ptg, ikut jam telefon). Selepas itu senarai "Petang ni" dan tanda team hadir dikosongkan; perlawanan yang belum dimain kekal untuk sesi seterusnya (`src/session.js`).
 - PIN admin: 5 cubaan salah dari peranti yang sama dalam 15 minit akan dikunci selama 15 minit (`supabase/migrations/002_pin_rate_limit.sql`).
 - Undo rally, pembetulan skor akhir, retired dan walkover disokong.
+- **Play-off (4 teratas):** separuh akhir #1 lwn #4 (Court 1) dan #2 lwn #3 (Court 2), kemudian akhir (pemenang) dan tempat ketiga (yang kalah). Semua perlawanan play-off **terbaik 3 game** (21 mata, beza 2, had 30, tiada seri). Admin jana play-off dari tab Play-off; pasukan akhir/tempat ketiga diisi sendiri daripada keputusan separuh akhir, dan keputusan separuh akhir dikunci sebaik sahaja akhir/tempat ketiga bermula. Play-off disimpan dalam `playoff.matches`, berasingan daripada perlawanan liga, jadi tidak dikira dalam kedudukan atau statistik (`src/playoff.js`, `supabase/migrations/004_playoff_match.sql`).
 - Konsol scoring admin (untuk telefon di tepi court): butang mata dengan skor dan tanda GAME POINT / MATCH POINT, Undo rally besar, tukar antara perlawanan live/hari ini, lineup & tarikh dalam bahagian yang boleh dilipat, skrin kekal menyala semasa scoring/Mod TV, dan getaran kecil setiap mata (Android).
 
 ## Arahan pembangunan
@@ -52,6 +53,7 @@ Struktur utama:
 - `src/domain.js` — skor BWF, Undo, retired/walkover dan pembetulan.
 - `src/schedule.js` — jadual round robin dan kumpulan pusingan.
 - `src/standings.js` — mata liga dan tie-break.
+- `src/playoff.js` — bracket play-off (separuh akhir, akhir, tempat ketiga).
 - `src/stats.js` — statistik pemain/pasangan.
 - `src/storage.js` — localStorage atau Supabase.
 - `src/App.jsx` — antara muka dan scoring admin.
