@@ -53,7 +53,8 @@ export async function saveMatch(match, pin) {
     return data;
   }
   const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || createSeedLeague();
-  const next = { ...saved, matches: saved.matches.map((item) => item.id === match.id ? match : item), updatedAt: new Date().toISOString() };
+  const replace = (list) => list.map((item) => item.id === match.id ? match : item);
+  const next = { ...saved, matches: replace(saved.matches), ...(saved.playoff ? { playoff: { ...saved.playoff, matches: replace(saved.playoff.matches || []) } } : {}), updatedAt: new Date().toISOString() };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   return next;
 }
