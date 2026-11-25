@@ -23,7 +23,8 @@ Tanpa sambungan Supabase, aplikasi berjalan dalam **Demo peranti ini**: data dis
 - Kedudukan ikut mata: 1 mata setiap game menang (2–0 = 2, 1–1 = 1 seorang, 0–2 = 0). Walkover = 2 mata kepada pemenang.
 - Jika mata sama: 2 team → head-to-head; 3 team atau lebih → beza mata badminton (jika tinggal 2 team, head-to-head); masih sama → cabutan undi.
 - Lajur Baki menunjukkan perlawanan yang belum dimain.
-- Admin boleh tanda team yang hadir dan sistem mencadangkan perlawanan yang belum dimain antara mereka, kemudian umumkan senarai "Perlawanan hari ini".
+- Halaman Utama memaparkan **tarikh sesi seterusnya** dengan besar. Kelab main Isnin dan Selasa sahaja: hari ini jika hari main sebelum waktu tamat sesi, kemudian Selasa, dan selepas sesi Selasa terus ke Isnin minggu depan (`nextPlayDay` dalam `src/session.js`).
+- Admin tekan **Susun perlawanan** pada kad tarikh untuk tanda team yang hadir; sistem mencadangkan perlawanan yang belum dimain antara mereka, kemudian admin umumkan senarai "Petang ni".
 - Tempat main dipilih dalam Tetapan admin (Dewan Sivik / Kompleks Sukan Wakaf Tapai, atau tambah baharu). Tempat disimpan bersama senarai yang diumumkan.
 - Bilangan court (1–4) ditetapkan dalam Tetapan admin. Dengan lebih daripada 1 court, cadangan disusun ikut giliran dan tiada team main di dua court serentak (`src/courts.js`).
 - Skor disimpan satu perlawanan pada satu masa (`update_league_match`, `supabase/migrations/003_update_single_match.sql`), jadi dua pengskor di dua court tidak saling menimpa.
