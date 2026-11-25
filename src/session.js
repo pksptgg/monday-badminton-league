@@ -43,3 +43,21 @@ export function formatClock(cutoff) {
   const part = hours < 12 ? 'pg' : hours < 20 ? 'ptg' : 'mlm';
   return `${h12}:${String(minutes).padStart(2, '0')} ${part}`;
 }
+
+// The club plays on Monday and Tuesday only. The next session is today while
+// today is a play day before the cut-off; otherwise the next Monday/Tuesday.
+// After Tuesday's session the next session is the following Monday.
+export const PLAY_DAYS = [1, 2]; // Isnin, Selasa
+
+export function nextPlayDay(cutoff, now = new Date()) {
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  for (let offset = 0; offset < 8; offset++) {
+    const day = new Date(start);
+    day.setDate(start.getDate() + offset);
+    if (!PLAY_DAYS.includes(day.getDay())) continue;
+    if (offset === 0 && now >= atTime(now, cutoff)) continue;
+    return day;
+  }
+  return start;
+}

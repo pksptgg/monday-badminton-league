@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_CUTOFF, formatClock, isSessionActive, nextCutoff, normalizeCutoff } from './session.js';
+import { DEFAULT_CUTOFF, formatClock, isSessionActive, nextCutoff, normalizeCutoff, nextPlayDay } from './session.js';
 
 const at = (y, m, d, h, min) => new Date(y, m - 1, d, h, min, 0, 0);
 
@@ -31,5 +31,31 @@ describe('daily session cut-off', () => {
     expect(isSessionActive(entry, '19:00', at(2026, 11, 16, 19, 30))).toBe(false);
     expect(isSessionActive(entry, '19:00', at(2026, 11, 17, 18, 0))).toBe(false);
     expect(isSessionActive(null, '19:00', at(2026, 11, 16, 18, 0))).toBe(false);
+  });
+});
+
+describe('nextPlayDay (Monday and Tuesday sessions)', () => {
+  // 23 Nov 2026 is a Monday.
+  const at = (date, hour, minute = 0) => new Date(2026, 10, date, hour, minute);
+  const day = (value) => `${value.getFullYear()}-${value.getMonth() + 1}-${value.getDate()}`;
+
+  it('is today on a play day before the cut-off', () => {
+    expect(day(nextPlayDay('19:00', at(23, 9)))).toBe('2026-11-23');
+    expect(day(nextPlayDay('19:00', at(24, 18, 59)))).toBe('2026-11-24');
+  });
+
+  it('moves from Monday to Tuesday after the cut-off', () => {
+    expect(day(nextPlayDay('19:00', at(23, 19)))).toBe('2026-11-24');
+  });
+
+  it('moves to next Monday after Tuesday and through the rest of the week', () => {
+    expect(day(nextPlayDay('19:00', at(24, 19, 30)))).toBe('2026-11-30');
+    expect(day(nextPlayDay('19:00', at(25, 10)))).toBe('2026-11-30');
+    expect(day(nextPlayDay('19:00', at(29, 23)))).toBe('2026-11-30');
+  });
+
+  it('follows the admin cut-off time', () => {
+    expect(day(nextPlayDay('21:00', at(24, 20)))).toBe('2026-11-24');
+    expect(day(nextPlayDay('18:00', at(24, 18, 30)))).toBe('2026-11-30');
   });
 });
