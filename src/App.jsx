@@ -494,7 +494,6 @@ export default function App() {
   const fixtureSource = roundFilter === 'done' ? finishedMatches : roundFilter === 'pending' ? pendingMatches : league.matches;
   const visibleFixtures = teamFilter ? fixtureSource.filter((match) => match.homeTeamId === teamFilter || match.awayTeamId === teamFilter) : fixtureSource;
   const roundCount = new Set(league.matches.map((match) => match.round).filter(Boolean)).size;
-  const posterTeams = [...new Set(todayMatches.flatMap((match) => [match.homeTeamId, match.awayTeamId]))].map((id) => teamsById.get(id)?.name.replace('Team ', '')).filter(Boolean).sort();
 
   const defaultPicked = plan.slice(0, 4 * courts).map(({ match }) => match.id);
   const playDay = nextPlayDay(cutoff, new Date(now));
@@ -526,16 +525,18 @@ export default function App() {
     <main className="page-content">
       {view === 'home' && <>
         <section className={`next-session ${playDayLabel === 'HARI INI' ? 'is-today' : ''}`} aria-label="Sesi seterusnya">
-          <div className="ns-stripe"><i /><i /><i /></div>
           <div className="ns-body">
-            <span className="ns-label"><CalendarDays size={16} />{playDayLabel}</span>
-            <div className="ns-date"><strong>{playDay.getDate()}</strong><div><span className="ns-weekday">{playDayParts.weekday}</span><span className="ns-month">{playDayParts.month} {playDay.getFullYear()}</span></div></div>
-            <p className="ns-meta">{PLAY_CLOCK} · {sessionVenue}</p>
-            {isAdmin && <button className="primary-btn ns-arrange" onClick={() => setArrangeOpen(true)}><UserCheck size={18} />Susun perlawanan</button>}
+            <div className="ns-main">
+              <span className="ns-label"><CalendarDays size={16} />{playDayLabel}</span>
+              <div className="ns-date"><strong>{playDay.getDate()}</strong><div><span className="ns-weekday">{playDayParts.weekday}</span><span className="ns-month">{playDayParts.month} {playDay.getFullYear()}</span></div></div>
+              <p className="ns-meta">{PLAY_CLOCK} · {sessionVenue}</p>
+              <p className="ns-count">{todayMatches.length ? `${todayMatches.length} perlawanan diumumkan` : `${pendingMatches.length} perlawanan belum dimain · main bila team hadir`}</p>
+            </div>
+            <div className="ns-progress"><span>PERKEMBANGAN LIGA · {league.season.toUpperCase()}</span><strong>{completedCount}<small> / {league.matches.length} perlawanan</small></strong><div><i style={{ width: `${completedCount / league.matches.length * 100}%` }} /></div></div>
+            {isAdmin && <div className="ns-actions"><button className="primary-btn" onClick={() => setArrangeOpen(true)}><UserCheck size={18} />Susun perlawanan</button><button className="light-btn" onClick={() => setSummaryDay(todayIso())}><ClipboardList size={18} />Rumusan hari ini</button></div>}
           </div>
         </section>
         {playoffVisible && league.playoff && <section className="panel home-playoff"><div className="panel-head"><div><span className="eyebrow">4 TERATAS · TERBAIK 3 GAME</span><h2>Play-off</h2></div><button className="text-btn" onClick={() => setView('playoff')}>Penuh<ChevronRight size={16} /></button></div><PlayoffBracket matches={playoffMatches} teamsById={teamsById} seeds={league.playoff.seeds || []} onOpen={openMatch} /></section>}
-        <section className="page-intro"><div><span className="eyebrow">{posterTeams.length ? `${league.season} · ${announcedLabel}` : `${league.season} · Main bila team hadir`}</span><h1>{posterTeams.length ? <>{posterTeams.join(' · ')}<br />turun gelanggang</> : <>{pendingMatches.length} perlawanan<br />menunggu</>}</h1><p>{posterTeams.length ? `${todayMatches.length} perlawanan · ${sessionVenue}` : `${sessionVenue} · ${PLAY_TIME}`}</p>{isAdmin && <button className="light-btn summary-btn" onClick={() => setSummaryDay(todayIso())}><ClipboardList size={18} />Rumusan hari ini</button>}</div><div className="season-progress"><span>PERKEMBANGAN LIGA</span><strong>{completedCount}<small> / {league.matches.length} perlawanan</small></strong><div><i style={{ width: `${completedCount / league.matches.length * 100}%` }} /></div></div></section>
         <section className="hero-score"><div className="section-heading"><div><span className="eyebrow">COURT {courtOf(heroMatch)}</span><h2>{heroMatch.status === 'live' ? 'Live sekarang' : FINAL.has(heroMatch.status) ? 'Keputusan terkini' : 'Perlawanan seterusnya'}</h2></div><div className="heading-actions"><button className="light-btn" onClick={() => { setSelectedMatchId(heroMatch.id); setTvMode(true); }}><Tv size={18} />Mod TV</button>{isAdmin && <button className="primary-btn" onClick={() => openMatch(heroMatch)}><Activity size={18} />Buka scoring</button>}</div></div><Scoreboard court={courtOf(heroMatch)} match={heroMatch} home={teamsById.get(heroMatch.homeTeamId)} away={teamsById.get(heroMatch.awayTeamId)} /></section>
         {liveMatches.filter((match) => match.id !== heroMatch.id).map((match) => <section className="hero-score extra-live" key={match.id}><div className="section-heading"><div><span className="eyebrow">COURT {courtOf(match)}</span><h2>Live sekarang</h2></div><div className="heading-actions"><button className="light-btn" onClick={() => { setSelectedMatchId(match.id); setTvMode(true); }}><Tv size={18} />Mod TV</button>{isAdmin && <button className="primary-btn" onClick={() => openMatch(match)}><Activity size={18} />Buka scoring</button>}</div></div><Scoreboard court={courtOf(match)} match={match} home={teamsById.get(match.homeTeamId)} away={teamsById.get(match.awayTeamId)} /></section>)}
         {todayMatches.length > 0 && <section className="match-poster" aria-label={`Senarai perlawanan ${announcedLabel}`}>
