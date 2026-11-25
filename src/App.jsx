@@ -525,7 +525,6 @@ export default function App() {
     <main className="page-content">
       {view === 'home' && <>
         <section className={`next-session ${playDayLabel === 'HARI INI' ? 'is-today' : ''}`} aria-label="Sesi seterusnya">
-          <div className="ns-stripe"><i /><i /><i /></div>
           <div className="ns-body">
             <div className="ns-main">
               <span className="ns-label"><CalendarDays size={16} />{playDayLabel}</span>
