@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_CUTOFF, formatClock, isSessionActive, nextCutoff, normalizeCutoff, nextPlayDay } from './session.js';
+import { DEFAULT_CUTOFF, formatClock, isSessionActive, nextCutoff, normalizeCutoff, nextPlayDay, cutoffOn, isSessionActive as active, sessionLabel } from './session.js';
 
 const at = (y, m, d, h, min) => new Date(y, m - 1, d, h, min, 0, 0);
 
@@ -57,5 +57,24 @@ describe('nextPlayDay (Monday and Tuesday sessions)', () => {
   it('follows the admin cut-off time', () => {
     expect(day(nextPlayDay('21:00', at(24, 20)))).toBe('2026-11-24');
     expect(day(nextPlayDay('18:00', at(24, 18, 30)))).toBe('2026-11-30');
+  });
+});
+
+describe('announcing the next session', () => {
+  const wednesday = new Date(2026, 10, 25, 9);
+
+  it('names the session by its day', () => {
+    expect(sessionLabel('2026-11-25', wednesday)).toBe('Petang ni');
+    expect(sessionLabel('2026-11-26', wednesday)).toBe('Esok petang');
+    expect(sessionLabel('2026-11-30', wednesday)).toBe('Isnin, 30 Nov');
+    expect(sessionLabel('2026-12-01', wednesday)).toBe('Selasa, 1 Dis');
+  });
+
+  it('keeps a list made on Wednesday up until Monday\'s cut-off', () => {
+    const monday = nextPlayDay('19:00', wednesday);
+    const entry = { date: '2026-11-30', validUntil: cutoffOn(monday, '19:00').toISOString() };
+    expect(active(entry, '19:00', new Date(2026, 10, 25, 20))).toBe(true);
+    expect(active(entry, '19:00', new Date(2026, 10, 30, 18, 59))).toBe(true);
+    expect(active(entry, '19:00', new Date(2026, 10, 30, 19))).toBe(false);
   });
 });
