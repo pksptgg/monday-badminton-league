@@ -25,7 +25,7 @@ export function nextCutoff(cutoff, from = new Date()) {
   return at;
 }
 
-function isoDay(date) {
+export function isoDay(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
@@ -60,4 +60,24 @@ export function nextPlayDay(cutoff, now = new Date()) {
     return day;
   }
   return start;
+}
+
+// The cut-off moment on a given play day: an announced list stays up until then.
+export function cutoffOn(day, cutoff) {
+  return atTime(day, cutoff);
+}
+
+// How to name an announced session: "Petang ni" on the day itself, "Esok
+// petang" the day before, otherwise the weekday and date ("Isnin, 30 Nov").
+export function sessionLabel(dateIso, now = new Date()) {
+  const today = isoDay(now);
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (dateIso === today) return 'Petang ni';
+  if (dateIso === isoDay(tomorrow)) return 'Esok petang';
+  const [year, month, day] = dateIso.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  const weekday = ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'][date.getDay()];
+  const monthName = ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'][month - 1];
+  return `${weekday}, ${day} ${monthName}`;
 }
